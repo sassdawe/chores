@@ -30,12 +30,12 @@ It records when chores are completed and shows whether each chore is on time or 
 
 ```sh
 dotnet build
-dotnet run --project /home/runner/work/chores/chores/Chores/Chores.csproj
+dotnet run --project Chores/Chores.csproj
 ```
 
 By default, the app stores data in:
 
-`/home/runner/work/chores/chores/Chores/data/chores.db`
+`Chores/data/chores.db`
 
 ## Test
 
@@ -47,7 +47,7 @@ dotnet test
 
 See:
 
-- `/home/runner/work/chores/chores/docs/deployment.md`
+- `docs/deployment.md`
 
 ## License
 
