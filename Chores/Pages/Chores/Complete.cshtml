@@ -1,0 +1,46 @@
+@page
+@model CompleteModel
+@{
+    ViewData["Title"] = "Mark Chore Done";
+}
+
+<div style="max-width:480px; margin:40px auto; text-align:center;">
+    <h2 class="mb-3">@Model.Chore.Name</h2>
+    <p class="text-muted mb-4">When was this done?</p>
+
+    <form method="post" asp-page-handler="" asp-route-id="@Model.Chore.Id">
+        <div class="mb-4">
+            <input type="datetime-local"
+                   id="completedAt"
+                   name="CompletedAt"
+                   class="form-control form-control-lg text-center"
+                   style="font-size:1.2rem; touch-action:manipulation;" />
+        </div>
+        <button type="submit" class="btn btn-success btn-lg me-2">Mark as done</button>
+        <a href="/" class="btn btn-outline-secondary btn-lg">Cancel</a>
+    </form>
+</div>
+
+<script>
+    (function () {
+        const input = document.getElementById('completedAt');
+
+        function toLocalDateTimeString(date) {
+            const pad = n => String(n).padStart(2, '0');
+            return date.getFullYear() + '-' +
+                pad(date.getMonth() + 1) + '-' +
+                pad(date.getDate()) + 'T' +
+                pad(date.getHours()) + ':' +
+                pad(date.getMinutes());
+        }
+
+        const now = new Date();
+        const nowStr = toLocalDateTimeString(now);
+
+        input.value = nowStr;   // default to right now
+        input.max = nowStr;     // block future dates in the picker
+
+        // Keep max updated every minute so it never falls behind
+        setInterval(() => { input.max = toLocalDateTimeString(new Date()); }, 60000);
+    })();
+</script>

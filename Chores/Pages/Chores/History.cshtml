@@ -1,0 +1,65 @@
+@page "{id:int}"
+@model HistoryModel
+@{
+    ViewData["Title"] = $"History – {Model.Chore.Name}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">@Model.Chore.Name</h2>
+    <a asp-page="Index" class="btn btn-outline-secondary btn-sm">← Back to chores</a>
+</div>
+
+<p class="text-muted">Schedule: @Model.Chore.Schedule.ToFriendlyLabel()</p>
+
+@if (!Model.Entries.Any())
+{
+    <p class="text-muted">No completions recorded yet.</p>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Completed</th>
+                <th>By</th>
+                <th>On schedule?</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in Model.Entries)
+            {
+                <tr>
+                    <td>@entry.Record.CompletedAtUtc.ToLocalTime().ToString("g")</td>
+                    <td>@entry.Record.CompletedByUser.LoginName</td>
+                    <td>
+                        @if (entry.Adherence is null)
+                        {
+                            <span class="badge bg-white border text-dark">First completion</span>
+                        }
+                        else if (entry.Adherence.Status == AdherenceStatus.OnTime)
+                        {
+                            <span class="badge bg-success">On time</span>
+                        }
+                        else if (entry.Adherence.Status == AdherenceStatus.DueToday)
+                        {
+                            <span class="badge bg-primary">On due date</span>
+                        }
+                        else if (entry.Adherence.DaysOverdue == 1)
+                        {
+                            <span class="badge bg-warning text-dark">1 day late</span>
+                        }
+                        else if (entry.Adherence.DaysOverdue == 2)
+                        {
+                            <span class="badge" style="background-color: #fd7e14;">2 days late</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">@entry.Adherence.DaysOverdue days late</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="text-muted small">@Model.Entries.Count completion(s) total. All times shown in local time.</p>
+}

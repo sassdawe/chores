@@ -1,0 +1,40 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Manage Chores";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Manage Chores</h2>
+    <a asp-page="Create" class="btn btn-primary">+ Add Chore</a>
+</div>
+
+@if (!Model.Chores.Any())
+{
+    <p class="text-muted">No chores yet. Add one to get started.</p>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Schedule</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var chore in Model.Chores)
+            {
+                <tr>
+                    <td>@chore.Name</td>
+                    <td>@chore.Schedule.ToFriendlyLabel()</td>
+                    <td>
+                        <a asp-page="History" asp-route-id="@chore.Id" class="btn btn-sm btn-outline-secondary">History</a>
+                        <a asp-page="Edit" asp-route-id="@chore.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

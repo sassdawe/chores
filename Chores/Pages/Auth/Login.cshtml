@@ -1,0 +1,100 @@
+@page
+@model LoginModel
+@{
+    ViewData["Title"] = "Sign in";
+}
+
+<h1>Sign in</h1>
+<div>
+    <input type="text" id="loginName" placeholder="Login name" autocomplete="username webauthn" class="form-control mb-2" style="max-width:300px" />
+    <button id="loginBtn" class="btn btn-primary">Sign in</button>
+    <p id="message" class="mt-2" style="display:none"></p>
+    <p class="mt-2">Don't have an account? <a href="/Auth/Register">Create one</a></p>
+</div>
+
+<script>
+    function base64urlToArrayBuffer(base64url) {
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+        const binary = atob(padded);
+        const buf = new ArrayBuffer(binary.length);
+        const view = new Uint8Array(buf);
+        for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
+        return buf;
+    }
+
+    function arrayBufferToBase64url(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let str = '';
+        for (const b of bytes) str += String.fromCharCode(b);
+        return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+        const msg = document.getElementById('message');
+        msg.style.display = 'none';
+
+        const username = document.getElementById('loginName').value.trim();
+        if (!username) {
+            msg.textContent = 'Please enter your login name.';
+            msg.style.display = 'block';
+            return;
+        }
+
+        try {
+            // Step 1: get assertion options
+            const optRes = await fetch('/api/auth/assertion/options', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!optRes.ok) throw new Error('Failed to get assertion options.');
+            const options = await optRes.json();
+
+            // Convert base64url fields to ArrayBuffer
+            options.challenge = base64urlToArrayBuffer(options.challenge);
+            if (options.allowCredentials) {
+                options.allowCredentials = options.allowCredentials.map(c => ({
+                    ...c,
+                    id: base64urlToArrayBuffer(c.id)
+                }));
+            }
+
+            // Step 2: get assertion
+            const assertion = await navigator.credentials.get({ publicKey: options });
+
+            // Step 3: encode response
+            const assertionResult = {
+                id: assertion.id,
+                rawId: arrayBufferToBase64url(assertion.rawId),
+                type: assertion.type,
+                clientExtensionResults: assertion.getClientExtensionResults(),
+                response: {
+                    authenticatorData: arrayBufferToBase64url(assertion.response.authenticatorData),
+                    clientDataJSON: arrayBufferToBase64url(assertion.response.clientDataJSON),
+                    signature: arrayBufferToBase64url(assertion.response.signature),
+                    userHandle: assertion.response.userHandle
+                        ? arrayBufferToBase64url(assertion.response.userHandle)
+                        : null
+                }
+            };
+
+            // Step 4: send to server
+            const resResult = await fetch('/api/auth/assertion/result', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(assertionResult)
+            });
+            if (!resResult.ok) throw new Error('Authentication failed on server.');
+            const data = await resResult.json();
+            if (data.status === 'ok') {
+                window.location.href = '/';
+            } else {
+                throw new Error('Unexpected server response.');
+            }
+        } catch (err) {
+            msg.textContent = 'Sign in failed: ' + err.message;
+            msg.style.display = 'block';
+        }
+    });
+</script>

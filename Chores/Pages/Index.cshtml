@@ -1,0 +1,88 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Chore Dashboard";
+}
+
+<style>
+    .chore-list { list-style: none; padding: 0; margin: 0; }
+    .chore-row {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        padding: 14px 16px; margin-bottom: 8px;
+        background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+        text-decoration: none; color: inherit;
+    }
+    .chore-row:hover { background: #f5f5f5; }
+    .badge {
+        padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; white-space: nowrap;
+    }
+    .badge-green  { background: #d4edda; color: #155724; }
+    .badge-yellow { background: #fff3cd; color: #856404; }
+    .badge-red    { background: #f8d7da; color: #721c24; }
+    .chore-labels { display:flex; gap:4px; flex-wrap:wrap; }
+    .label-pill { padding:2px 8px; border-radius:10px; font-size:0.75rem; color:#fff; font-weight:500; }
+</style>
+
+<h2 class="mb-3">My Household Chores</h2>
+
+@if (Model.AllLabels.Any())
+{
+    <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+        <a href="/" class="badge @(Model.ActiveLabelId == null ? "border border-dark text-dark" : "bg-secondary text-white")"
+           style="text-decoration:none; padding:6px 12px;">All</a>
+        @foreach (var label in Model.AllLabels)
+        {
+            var isActive = Model.ActiveLabelId == label.Id;
+            <a href="?labelId=@label.Id"
+               class="badge"
+               style="background-color:@label.Color; opacity:@(isActive ? "1" : "0.6"); text-decoration:none; padding:6px 12px; color:#fff;">
+                @label.Name
+            </a>
+        }
+    </div>
+}
+
+@if (!Model.ChoreStatuses.Any())
+{
+    <p class="text-muted">No chores yet. <a asp-page="/Chores/Index">Add some chores</a> to get started.</p>
+}
+else
+{
+    <ul class="chore-list">
+        @foreach (var cs in Model.ChoreStatuses)
+        {
+            <li>
+                <a class="chore-row" href="/Chores/Complete?id=@cs.Chore.Id">
+                    <span class="chore-name">@cs.Chore.Name</span>
+                    <span class="chore-labels">
+                        @foreach (var label in cs.Chore.Labels)
+                        {
+                            <span class="label-pill" style="background-color:@label.Color;">@label.Name</span>
+                        }
+                    </span>
+                    @{
+                        string badgeClass, badgeText;
+                        if (cs.Adherence.Status == AdherenceStatus.OnTime)
+                        {
+                            badgeClass = "badge-green";
+                            badgeText = "On time";
+                        }
+                        else if (cs.Adherence.Status == AdherenceStatus.DueToday)
+                        {
+                            badgeClass = "badge-yellow";
+                            badgeText = "Due today";
+                        }
+                        else
+                        {
+                            badgeClass = "badge-red";
+                            badgeText = cs.Adherence.DaysOverdue == int.MaxValue
+                                ? "Never done"
+                                : $"{cs.Adherence.DaysOverdue} days overdue";
+                        }
+                    }
+                    <span class="badge @badgeClass">@badgeText</span>
+                </a>
+            </li>
+        }
+    </ul>
+}

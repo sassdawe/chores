@@ -1,0 +1,98 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Create account";
+}
+
+<h1>Create account</h1>
+<p>Choose a login name. You'll use your device's passkey (fingerprint, Face ID, or security key) to sign in — no password needed.</p>
+
+<div>
+    <input type="text" id="loginName" placeholder="Login name" autocomplete="username webauthn" class="form-control mb-2" style="max-width:300px" />
+    <button id="registerBtn" class="btn btn-primary">Create account</button>
+    <p id="message" class="mt-2" style="display:none"></p>
+</div>
+
+<script>
+    function base64urlToArrayBuffer(base64url) {
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
+        const binary = atob(padded);
+        const buf = new ArrayBuffer(binary.length);
+        const view = new Uint8Array(buf);
+        for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
+        return buf;
+    }
+
+    function arrayBufferToBase64url(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let str = '';
+        for (const b of bytes) str += String.fromCharCode(b);
+        return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    document.getElementById('registerBtn').addEventListener('click', async () => {
+        const msg = document.getElementById('message');
+        msg.style.display = 'none';
+
+        const username = document.getElementById('loginName').value.trim();
+        if (!username) {
+            msg.textContent = 'Please enter a login name.';
+            msg.style.display = 'block';
+            return;
+        }
+
+        try {
+            // Step 1: get attestation options
+            const optRes = await fetch('/api/auth/attestation/options', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username })
+            });
+            if (!optRes.ok) throw new Error('Failed to get attestation options.');
+            const options = await optRes.json();
+
+            // Convert base64url fields to ArrayBuffer
+            options.challenge = base64urlToArrayBuffer(options.challenge);
+            options.user.id = base64urlToArrayBuffer(options.user.id);
+            if (options.excludeCredentials) {
+                options.excludeCredentials = options.excludeCredentials.map(c => ({
+                    ...c,
+                    id: base64urlToArrayBuffer(c.id)
+                }));
+            }
+
+            // Step 2: create credential
+            const credential = await navigator.credentials.create({ publicKey: options });
+
+            // Step 3: encode response
+            const attestationResult = {
+                id: credential.id,
+                rawId: arrayBufferToBase64url(credential.rawId),
+                type: credential.type,
+                clientExtensionResults: credential.getClientExtensionResults(),
+                response: {
+                    attestationObject: arrayBufferToBase64url(credential.response.attestationObject),
+                    clientDataJSON: arrayBufferToBase64url(credential.response.clientDataJSON)
+                }
+            };
+
+            // Step 4: send to server
+            const resResult = await fetch('/api/auth/attestation/result', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(attestationResult)
+            });
+            if (!resResult.ok) throw new Error('Registration failed on server.');
+            const data = await resResult.json();
+            if (data.status === 'ok') {
+                window.location.href = '/';
+            } else {
+                throw new Error('Unexpected server response.');
+            }
+        } catch (err) {
+            msg.textContent = 'Registration failed: ' + err.message;
+            msg.style.display = 'block';
+        }
+    });
+</script>

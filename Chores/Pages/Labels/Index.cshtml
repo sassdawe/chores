@@ -1,0 +1,42 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Labels";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Labels</h2>
+    <a asp-page="Create" class="btn btn-primary btn-sm">+ Add Label</a>
+</div>
+
+@if (!Model.Labels.Any())
+{
+    <p class="text-muted">No labels yet.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Color</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var label in Model.Labels)
+            {
+                <tr>
+                    <td>
+                        <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background-color:@label.Color;margin-right:6px;vertical-align:middle;"></span>
+                        @label.Name
+                    </td>
+                    <td>@label.Color</td>
+                    <td>
+                        <a asp-page="Edit" asp-route-id="@label.Id" class="btn btn-outline-secondary btn-sm">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

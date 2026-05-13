@@ -1,0 +1,48 @@
+@page
+@model CreateModel
+@{
+    ViewData["Title"] = "Add Chore";
+}
+
+<div style="max-width:480px;">
+    <h2 class="mb-3">Add Chore</h2>
+
+    <form method="post">
+        <div class="mb-3">
+            <label for="Name" class="form-label">Chore name</label>
+            <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label for="Schedule" class="form-label">Schedule</label>
+            <select id="Schedule" name="Schedule" class="form-select">
+                @foreach (Schedule s in Enum.GetValues(typeof(Schedule)))
+                {
+                    <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToFriendlyLabel()</option>
+                }
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Labels</label>
+            @if (Model.AvailableLabels.Any())
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var label in Model.AvailableLabels)
+                    {
+                        <label class="d-flex align-items-center gap-1" style="cursor:pointer;">
+                            <input type="checkbox" name="SelectedLabelIds" value="@label.Id"
+                                   checked="@(Model.SelectedLabelIds.Contains(label.Id) ? "checked" : null)" />
+                            <span class="badge" style="background-color:@label.Color;">@label.Name</span>
+                        </label>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small">No labels yet. <a asp-page="/Labels/Create">Create one</a></p>
+            }
+        </div>
+        <button type="submit" class="btn btn-primary me-2">Save</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>

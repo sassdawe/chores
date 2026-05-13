@@ -1,0 +1,37 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Members";
+}
+
+<h2 class="mb-3">Household Members</h2>
+
+@if (Model.Members.Any())
+{
+    <ul class="list-group mb-4" style="max-width:400px;">
+        @foreach (var member in Model.Members)
+        {
+            <li class="list-group-item">@member.LoginName</li>
+        }
+    </ul>
+}
+else
+{
+    <p class="text-muted">No members found.</p>
+}
+
+<div style="max-width:400px;">
+    <h5>Invite a member</h5>
+
+    @if (!string.IsNullOrEmpty(Model.InviteResult))
+    {
+        <div class="alert alert-info py-2">@Model.InviteResult</div>
+    }
+
+    <form method="post" asp-page-handler="Invite">
+        <div class="input-group mb-2">
+            <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
+            <button type="submit" class="btn btn-primary">Invite</button>
+        </div>
+    </form>
+</div>

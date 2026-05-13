@@ -1,0 +1,23 @@
+@page
+@model CreateModel
+@{
+    ViewData["Title"] = "Add Label";
+}
+
+<div style="max-width:480px;">
+    <h2 class="mb-3">Add Label</h2>
+
+    <form method="post">
+        <div class="mb-3">
+            <label for="Name" class="form-label">Name</label>
+            <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="mb-3">
+            <label for="Color" class="form-label">Color</label>
+            <input id="Color" name="Color" type="color" class="form-control form-control-color" value="@Model.Color" />
+        </div>
+        <button type="submit" class="btn btn-primary me-2">Save</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
