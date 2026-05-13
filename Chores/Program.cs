@@ -260,6 +260,101 @@ app.MapPost("/api/auth/assertion/result", async (HttpContext httpContext) =>
     return Results.Ok(new { status = "ok" });
 });
 
+// --- Profile passkey management endpoints (authenticated users only) ---
+
+app.MapPost("/api/profile/passkey/options", async (HttpContext httpContext) =>
+{
+    if (httpContext.User.Identity?.IsAuthenticated != true)
+        return Results.Unauthorized();
+
+    var username = httpContext.User.Identity!.Name!;
+    var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
+    var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
+
+    var user = await db.Users
+        .Include(u => u.Credentials)
+        .FirstOrDefaultAsync(u => u.LoginName == username);
+
+    var excludeCredentials = user?.Credentials
+        .Select(c => new PublicKeyCredentialDescriptor(c.CredentialId))
+        .ToList() ?? [];
+
+    var fidoUser = new Fido2User
+    {
+        Name = username,
+        Id = Encoding.UTF8.GetBytes(username),
+        DisplayName = username
+    };
+
+    var options = fido2.RequestNewCredential(new RequestNewCredentialParams
+    {
+        User = fidoUser,
+        ExcludeCredentials = excludeCredentials,
+        AuthenticatorSelection = AuthenticatorSelection.Default,
+        AttestationPreference = AttestationConveyancePreference.None
+    });
+
+    httpContext.Session.SetString("fido2.profile.attestation.options", options.ToJson());
+
+    return Results.Content(options.ToJson(), "application/json");
+});
+
+app.MapPost("/api/profile/passkey/result", async (HttpContext httpContext) =>
+{
+    if (httpContext.User.Identity?.IsAuthenticated != true)
+        return Results.Unauthorized();
+
+    var attestationResponse = await httpContext.Request
+        .ReadFromJsonAsync<AuthenticatorAttestationRawResponse>();
+    if (attestationResponse is null)
+        return Results.BadRequest("Invalid attestation response.");
+
+    var storedJson = httpContext.Session.GetString("fido2.profile.attestation.options");
+    if (storedJson is null)
+        return Results.BadRequest("No attestation options in session.");
+
+    var storedOptions = CredentialCreateOptions.FromJson(storedJson);
+    var username = httpContext.User.Identity!.Name!;
+
+    var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
+    var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
+
+    IsCredentialIdUniqueToUserAsyncDelegate isUnique = async (args, ct) =>
+    {
+        var all = await db.FidoCredentials.ToListAsync(ct);
+        return !all.Any(c => c.CredentialId.SequenceEqual(args.CredentialId));
+    };
+
+    var result = await fido2.MakeNewCredentialAsync(new MakeNewCredentialParams
+    {
+        AttestationResponse = attestationResponse,
+        OriginalOptions = storedOptions,
+        IsCredentialIdUniqueToUserCallback = isUnique
+    });
+
+    var user = await db.Users
+        .Include(u => u.Credentials)
+        .FirstOrDefaultAsync(u => u.LoginName == username);
+
+    if (user is null)
+        return Results.NotFound("User not found.");
+
+    user.Credentials.Add(new FidoCredential
+    {
+        CredentialId = result.Id,
+        PublicKey = result.PublicKey,
+        UserHandle = storedOptions.User.Id,
+        SignCount = result.SignCount,
+        CredType = result.Type.ToString(),
+        RegDate = DateTime.UtcNow,
+        AaGuid = result.AaGuid
+    });
+
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { status = "ok" });
+});
+
 app.MapRazorPages()
    .WithStaticAssets();
 

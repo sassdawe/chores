@@ -36,6 +36,8 @@ Set environment variables in `docker-compose.yml` or via `-e` flags:
 | `DataDirectory` | `/data` | Path inside the container where `chores.db` is stored |
 | `Fido2__ServerDomain` | `localhost` | Domain used for passkey registration/authentication |
 | `Fido2__Origins` | `https://localhost:5001` | Comma-separated list of allowed WebAuthn origins |
+| `InstanceOperator__Name` | *(empty)* | Display name shown in the footer as "Hosted by …". Hidden if empty. |
+| `InstanceOperator__Url` | *(empty)* | Optional URL linked from the operator name in the footer. |
 
 Example `docker-compose.yml` override for a Raspberry Pi on your local network:
 
@@ -141,9 +143,9 @@ az webapp config storage-account add \
   --mount-path /data
 ```
 
-### 5. Configure FIDO2 settings
+### 5. Configure application settings
 
-FIDO2/passkeys are bound to a specific domain and origin. Set these to match your App Service URL:
+Set all required and optional app settings via `az webapp config appsettings set`:
 
 ```sh
 az webapp config appsettings set \
@@ -151,12 +153,24 @@ az webapp config appsettings set \
   --resource-group <resource-group> \
   --settings \
     Fido2__ServerDomain=<app-name>.azurewebsites.net \
-    Fido2__Origins=https://<app-name>.azurewebsites.net
+    Fido2__Origins=https://<app-name>.azurewebsites.net \
+    InstanceOperator__Name="The Smith Family" \
+    InstanceOperator__Url="https://smith.example.com"
 ```
 
 > Azure App Service provides a free TLS certificate for `*.azurewebsites.net` automatically. FIDO2/passkeys **require HTTPS** — this is handled for you.
 
-If you configure a custom domain, update both settings to match it.
+If you configure a custom domain, update `Fido2__ServerDomain` and `Fido2__Origins` to match it.
+
+#### Available settings
+
+| Setting | Required | Description |
+|---|---|---|
+| `Fido2__ServerDomain` | ✅ | Domain used for passkey registration/authentication. Must match the browser's address bar. |
+| `Fido2__Origins` | ✅ | Comma-separated list of allowed WebAuthn origins (full URL with scheme). Must match exactly. |
+| `InstanceOperator__Name` | — | Display name of the person or household running this instance. Shown in the app footer. Leave empty to hide. |
+| `InstanceOperator__Url` | — | Optional URL linked from the operator name in the footer (e.g. a personal site). Ignored if `Name` is empty. |
+| `DataDirectory` | — | Path inside the container where `chores.db` is stored. Defaults to `/data`. |
 
 ### 6. Deploy updates
 

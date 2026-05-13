@@ -4,13 +4,16 @@
     ViewData["Title"] = "Create account";
 }
 
-<h1>Create account</h1>
-<p>Choose a login name. You'll use your device's passkey (fingerprint, Face ID, or security key) to sign in — no password needed.</p>
-
-<div>
-    <input type="text" id="loginName" placeholder="Login name" autocomplete="username webauthn" class="form-control mb-2" style="max-width:300px" />
-    <button id="registerBtn" class="btn btn-primary">Create account</button>
-    <p id="message" class="mt-2" style="display:none"></p>
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm p-4">
+            <h1 class="h4 mb-2">Create account</h1>
+            <p class="text-muted small mb-3">Choose a login name. You'll use your device's passkey (fingerprint, Face ID, or security key) to sign in — no password needed.</p>
+            <input type="text" id="loginName" placeholder="Login name" autocomplete="username webauthn" class="form-control mb-2" />
+            <button id="registerBtn" class="btn btn-primary">Create account</button>
+            <p id="message" class="mt-2" style="display:none"></p>
+        </div>
+    </div>
 </div>
 
 <script>

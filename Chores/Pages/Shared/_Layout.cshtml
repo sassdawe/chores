@@ -8,36 +8,59 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Chores.styles.css" asp-append-version="true" />
+    <script>
+        (function() {
+            var saved = localStorage.getItem('theme');
+            var theme = saved === 'light' || saved === 'dark' ? saved : 'auto';
+            var effective = theme === 'auto'
+                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                : theme;
+            document.documentElement.setAttribute('data-bs-theme', effective);
+            document.documentElement.setAttribute('data-theme-mode', theme);
+        })();
+    </script>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm bg-body-tertiary mb-3 navbar-shadow">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">Chores</a>
+                <a class="navbar-brand fw-semibold" asp-area="" asp-page="/Index">Chores</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Chores</a>
+                            <a class="nav-link" asp-area="" asp-page="/Index">Chores</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Chores/Index">Manage Chores</a>
+                            <a class="nav-link" asp-area="" asp-page="/Chores/Index">Manage Chores</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Members/Index">Members</a>
+                            <a class="nav-link" asp-area="" asp-page="/Members/Index">Members</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Labels/Index">Labels</a>
+                            <a class="nav-link" asp-area="" asp-page="/Labels/Index">Labels</a>
                         </li>
                     </ul>
-                    <ul class="navbar-nav">
+                    <ul class="navbar-nav align-items-center gap-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Auth/Logout">Sign out</a>
+                            <button id="themeToggle" class="btn btn-sm btn-outline-secondary border-0" aria-label="Toggle theme" title="Toggle theme"></button>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/Profile/Index">Profile</a>
+                        </li>
+                        <li class="nav-item">
+                            <form method="post" asp-page="/Auth/Logout" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="nav-link btn btn-link p-0">Sign out</button>
+                            </form>
                         </li>
                     </ul>
+                    }
                 </div>
             </div>
         </nav>
@@ -48,15 +71,72 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <footer class="border-top footer text-muted bg-body-tertiary">
         <div class="container">
-            &copy; 2026 - Chores
+            &copy; 2026 - Chores &mdash; <a asp-page="/Privacy" class="text-muted">Privacy Policy</a>
+            @{
+                var operatorName = Context.RequestServices
+                    .GetRequiredService<IConfiguration>()["InstanceOperator:Name"];
+                var operatorUrl  = Context.RequestServices
+                    .GetRequiredService<IConfiguration>()["InstanceOperator:Url"];
+                if (!string.IsNullOrWhiteSpace(operatorName))
+                {
+                    <text> &mdash; Hosted by </text>
+                    if (!string.IsNullOrWhiteSpace(operatorUrl))
+                    {
+                        <a href="@operatorUrl" class="text-muted" target="_blank" rel="noopener">@operatorName</a>
+                    }
+                    else
+                    {
+                        <span>@operatorName</span>
+                    }
+                }
+            }
         </div>
     </footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        (function() {
+            var btn = document.getElementById('themeToggle');
+            if (!btn) return;
+
+            var sunSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/></svg>';
+            var moonSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/></svg>';
+            var autoSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 0 8 1v14zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16z"/></svg>';
+
+            function updateIcon() {
+                var mode = document.documentElement.getAttribute('data-theme-mode') || 'auto';
+                if (mode === 'light') {
+                    btn.innerHTML = sunSvg;
+                    btn.title = 'Theme: Light — click for Dark';
+                } else if (mode === 'dark') {
+                    btn.innerHTML = moonSvg;
+                    btn.title = 'Theme: Dark — click for Auto';
+                } else {
+                    btn.innerHTML = autoSvg;
+                    btn.title = 'Theme: Auto — click for Light';
+                }
+            }
+
+            btn.addEventListener('click', function() {
+                var current = document.documentElement.getAttribute('data-theme-mode') || 'auto';
+                var next = current === 'auto' ? 'light' : current === 'light' ? 'dark' : 'auto';
+                localStorage.setItem('theme', next);
+                var effective = next === 'auto'
+                    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+                    : next;
+                document.documentElement.setAttribute('data-bs-theme', effective);
+                document.documentElement.setAttribute('data-theme-mode', next);
+                updateIcon();
+            });
+
+            updateIcon();
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

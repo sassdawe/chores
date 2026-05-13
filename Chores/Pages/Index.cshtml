@@ -9,16 +9,12 @@
     .chore-row {
         display: flex; align-items: center; justify-content: space-between; gap: 8px;
         padding: 14px 16px; margin-bottom: 8px;
-        background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+        background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.06);
         text-decoration: none; color: inherit;
+        transition: background .15s;
     }
-    .chore-row:hover { background: #f5f5f5; }
-    .badge {
-        padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; white-space: nowrap;
-    }
-    .badge-green  { background: #d4edda; color: #155724; }
-    .badge-yellow { background: #fff3cd; color: #856404; }
-    .badge-red    { background: #f8d7da; color: #721c24; }
+    .chore-row:hover { background: var(--bs-tertiary-bg); }
     .chore-labels { display:flex; gap:4px; flex-wrap:wrap; }
     .label-pill { padding:2px 8px; border-radius:10px; font-size:0.75rem; color:#fff; font-weight:500; }
 </style>
@@ -64,17 +60,17 @@ else
                         string badgeClass, badgeText;
                         if (cs.Adherence.Status == AdherenceStatus.OnTime)
                         {
-                            badgeClass = "badge-green";
+                            badgeClass = "text-bg-success";
                             badgeText = "On time";
                         }
                         else if (cs.Adherence.Status == AdherenceStatus.DueToday)
                         {
-                            badgeClass = "badge-yellow";
+                            badgeClass = "text-bg-warning";
                             badgeText = "Due today";
                         }
                         else
                         {
-                            badgeClass = "badge-red";
+                            badgeClass = "text-bg-danger";
                             badgeText = cs.Adherence.DaysOverdue == int.MaxValue
                                 ? "Never done"
                                 : $"{cs.Adherence.DaysOverdue} days overdue";

@@ -14,4 +14,5 @@ public class FidoCredential
     public string CredType { get; set; } = string.Empty;
     public DateTime RegDate { get; set; }
     public Guid AaGuid { get; set; }
+    public string? Nickname { get; set; }
 }

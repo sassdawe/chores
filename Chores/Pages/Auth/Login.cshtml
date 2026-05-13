@@ -4,12 +4,20 @@
     ViewData["Title"] = "Sign in";
 }
 
-<h1>Sign in</h1>
-<div>
-    <input type="text" id="loginName" placeholder="Login name" autocomplete="username webauthn" class="form-control mb-2" style="max-width:300px" />
-    <button id="loginBtn" class="btn btn-primary">Sign in</button>
-    <p id="message" class="mt-2" style="display:none"></p>
-    <p class="mt-2">Don't have an account? <a href="/Auth/Register">Create one</a></p>
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm p-4">
+            <h1 class="h4 mb-3">Sign in</h1>
+            <input type="text" id="loginName" placeholder="Login name" autocomplete="username webauthn" class="form-control mb-2" />
+            <button id="loginBtn" class="btn btn-primary">Sign in</button>
+            <p class="text-muted mt-2 small">
+                We use your login name only to start passkey sign-in. No password or email is collected here.
+                <a href="/Privacy">Read the privacy policy</a>.
+            </p>
+            <p id="message" class="mt-2" style="display:none"></p>
+            <p class="mt-2 mb-0">Don't have an account? <a href="/Auth/Register">Create one</a></p>
+        </div>
+    </div>
 </div>
 
 <script>

@@ -4,5 +4,52 @@
     ViewData["Title"] = "Privacy Policy";
 }
 <h1>@ViewData["Title"]</h1>
+<p class="text-muted">Last updated: May 2026</p>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<h4>What this app is</h4>
+<p>
+    Chores is a self-hosted household chore tracker. It is installed and operated by a household member
+    on infrastructure they control (e.g. a home server or a private cloud). The operator of this
+    instance — not GitHub or any third party — is responsible for the data stored here.
+</p>
+
+<h4>Data we store</h4>
+<ul>
+    <li><strong>Account information</strong> — your chosen login name and the household you belong to.</li>
+    <li><strong>Passkey credentials</strong> — the public key and metadata associated with each FIDO2/passkey device you register. Your private key never leaves your device.</li>
+    <li><strong>Chore records</strong> — chore definitions, categories/labels, and completion history that you or other household members log.</li>
+</ul>
+
+<h4>Data we do not store</h4>
+<ul>
+    <li>Passwords — authentication is passkey-only; no passwords are ever created or stored.</li>
+    <li>Email addresses, phone numbers, or any other contact information.</li>
+    <li>Location data, device identifiers beyond the FIDO2 credential metadata, or behavioural analytics.</li>
+</ul>
+
+<h4>Data sharing</h4>
+<p>
+    No data is shared with any external service. All data remains on the server this instance is hosted on.
+    If you are using a shared household instance, other members of the same household can see chore and
+    completion data as that is the intended purpose of the app.
+</p>
+
+<h4>Data retention</h4>
+<p>
+    Data is retained for as long as this instance is running and its database is preserved.
+    Any household member with access to the server can delete the database to remove all data.
+    Completion records are append-only by design and cannot be deleted through the UI.
+</p>
+
+<h4>Cookies</h4>
+<p>
+    This app sets a single authentication cookie after a successful passkey login. It is strictly
+    necessary for the app to function and contains no tracking or advertising data. A short-lived
+    session cookie is also used during the passkey login ceremony.
+</p>
+
+<h4>Your rights</h4>
+<p>
+    Contact the operator of this instance (the person who set it up in your household) to request
+    access to, correction of, or deletion of your personal data.
+</p>

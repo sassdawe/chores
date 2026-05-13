@@ -1,5 +1,7 @@
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,19 +10,46 @@ html {
   }
 }
 
+body {
+  margin-bottom: 60px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.6;
+}
+
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+/* Navbar nav links — pill-shaped with subtle raised look */
+@media (min-width: 576px) {
+  .navbar-nav .nav-link,
+  .navbar-nav .btn-link.nav-link {
+    border-radius: 6px;
+    padding: 5px 12px !important;
+    background: var(--bs-tertiary-bg);
+    box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+    margin: 0 2px;
+    transition: background .15s, box-shadow .15s;
+  }
+
+  .navbar-nav .nav-link:hover,
+  .navbar-nav .btn-link.nav-link:hover {
+    background: var(--bs-secondary-bg);
+    box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  }
+
+  .navbar-nav .nav-link:active,
+  .navbar-nav .btn-link.nav-link:active {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.15);
+  }
 }
 
-body {
-  margin-bottom: 60px;
+/* Footer */
+.footer {
+  padding: 12px 0;
 }
 
+/* Form floating placeholders */
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
