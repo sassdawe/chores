@@ -133,8 +133,6 @@ app.MapPost("/api/auth/attestation/result", async (HttpContext httpContext) =>
 
     var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
     var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
-    var householdInvitations = httpContext.RequestServices.GetRequiredService<HouseholdInvitationService>();
-
     IsCredentialIdUniqueToUserAsyncDelegate isUnique = async (args, ct) =>
     {
         return !await db.FidoCredentials.AnyAsync(c => c.CredentialId.SequenceEqual(args.CredentialId), ct);
@@ -153,29 +151,14 @@ app.MapPost("/api/auth/attestation/result", async (HttpContext httpContext) =>
     if (existingUser is not null)
         return Results.Conflict("That login name is unavailable.");
 
-    var pendingInvite = await householdInvitations.GetLatestPendingInviteAsync(username);
-    AppUser user;
-    if (pendingInvite is null)
+    var household = new Household { Name = $"{username}'s household" };
+    db.Households.Add(household);
+    var user = new AppUser
     {
-        var household = new Household { Name = $"{username}'s household" };
-        db.Households.Add(household);
-        user = new AppUser
-        {
-            LoginName = username,
-            Household = household,
-            IsHouseholdOwner = true
-        };
-    }
-    else
-    {
-        user = new AppUser
-        {
-            LoginName = username,
-            HouseholdId = pendingInvite.HouseholdId,
-            IsHouseholdOwner = false
-        };
-        pendingInvite.AcceptedAtUtc = DateTime.UtcNow;
-    }
+        LoginName = username,
+        Household = household,
+        IsHouseholdOwner = true
+    };
 
     db.Users.Add(user);
 

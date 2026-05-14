@@ -37,6 +37,9 @@ else
             </div>
             <span asp-validation-for="InviteLoginName" class="text-danger"></span>
         </form>
+        <p class="text-muted small mt-2 mb-0">
+            Invites expire after 5 days. If a login name does not exist yet, any invite sent before that person registers is discarded and won’t appear in their profile later.
+        </p>
     }
     else
     {

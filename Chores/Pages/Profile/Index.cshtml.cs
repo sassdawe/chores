@@ -118,7 +118,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
         CurrentUser = user;
         Passkeys = [.. user.Credentials.OrderBy(c => c.RegDate)];
-        PendingInvites = await householdInvitations.GetPendingInvitesAsync(username);
+        PendingInvites = await householdInvitations.GetPendingInvitesAsync(user);
         return true;
     }
 }

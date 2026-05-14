@@ -6,27 +6,28 @@ namespace Chores.Services;
 
 public class HouseholdInvitationService(AppDbContext db)
 {
-    public async Task<List<HouseholdInvite>> GetPendingInvitesAsync(string loginName, CancellationToken cancellationToken = default)
+    private static readonly TimeSpan InviteLifetime = TimeSpan.FromDays(5);
+
+    public async Task<List<HouseholdInvite>> GetPendingInvitesAsync(AppUser user, CancellationToken cancellationToken = default)
     {
+        var registrationCutoffUtc = GetRegistrationCutoffUtc(user);
+        if (registrationCutoffUtc is null)
+        {
+            return [];
+        }
+
+        await DiscardObsoletePendingInvitesAsync(user.LoginName, registrationCutoffUtc.Value, cancellationToken);
+
         return await db.HouseholdInvites
             .AsNoTracking()
             .Include(invite => invite.Household)
             .Include(invite => invite.InvitedByUser)
-            .Where(invite => invite.LoginName == loginName
+            .Where(invite => invite.LoginName == user.LoginName
                 && invite.AcceptedAtUtc == null
                 && invite.DeclinedAtUtc == null)
+            .Where(invite => invite.CreatedAtUtc >= registrationCutoffUtc.Value)
             .OrderByDescending(invite => invite.CreatedAtUtc)
             .ToListAsync(cancellationToken);
-    }
-
-    public async Task<HouseholdInvite?> GetLatestPendingInviteAsync(string loginName, CancellationToken cancellationToken = default)
-    {
-        return await db.HouseholdInvites
-            .Where(invite => invite.LoginName == loginName
-                && invite.AcceptedAtUtc == null
-                && invite.DeclinedAtUtc == null)
-            .OrderByDescending(invite => invite.CreatedAtUtc)
-            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task CreateInviteAsync(AppUser inviter, string loginName, CancellationToken cancellationToken = default)
@@ -43,6 +44,7 @@ public class HouseholdInvitationService(AppDbContext db)
 
         var existingUser = await db.Users
             .AsNoTracking()
+            .Include(user => user.Credentials)
             .FirstOrDefaultAsync(user => user.LoginName == loginName, cancellationToken);
 
         if (existingUser is not null && existingUser.HouseholdId == inviter.HouseholdId)
@@ -50,11 +52,15 @@ public class HouseholdInvitationService(AppDbContext db)
             return;
         }
 
+        var registrationCutoffUtc = GetRegistrationCutoffUtc(existingUser);
+        await DiscardObsoletePendingInvitesAsync(loginName, registrationCutoffUtc, cancellationToken);
+
         var existingInvite = await db.HouseholdInvites
             .FirstOrDefaultAsync(invite => invite.HouseholdId == inviter.HouseholdId
                 && invite.LoginName == loginName
                 && invite.AcceptedAtUtc == null
-                && invite.DeclinedAtUtc == null, cancellationToken);
+                && invite.DeclinedAtUtc == null
+                && invite.CreatedAtUtc >= GetActiveInviteCutoffUtc(registrationCutoffUtc), cancellationToken);
 
         if (existingInvite is not null)
         {
@@ -79,11 +85,20 @@ public class HouseholdInvitationService(AppDbContext db)
             return false;
         }
 
+        var registrationCutoffUtc = GetRegistrationCutoffUtc(user);
+        if (registrationCutoffUtc is null)
+        {
+            return false;
+        }
+
+        await DiscardObsoletePendingInvitesAsync(user.LoginName, registrationCutoffUtc.Value, cancellationToken);
+
         var invite = await db.HouseholdInvites
             .FirstOrDefaultAsync(candidate => candidate.Id == inviteId
                 && candidate.LoginName == user.LoginName
                 && candidate.AcceptedAtUtc == null
-                && candidate.DeclinedAtUtc == null, cancellationToken);
+                && candidate.DeclinedAtUtc == null
+                && candidate.CreatedAtUtc >= registrationCutoffUtc.Value, cancellationToken);
 
         if (invite is null)
         {
@@ -114,11 +129,20 @@ public class HouseholdInvitationService(AppDbContext db)
 
     public async Task<bool> DeclineInviteAsync(string loginName, int inviteId, CancellationToken cancellationToken = default)
     {
+        var existingUser = await db.Users
+            .AsNoTracking()
+            .Include(user => user.Credentials)
+            .FirstOrDefaultAsync(user => user.LoginName == loginName, cancellationToken);
+
+        var registrationCutoffUtc = GetRegistrationCutoffUtc(existingUser);
+        await DiscardObsoletePendingInvitesAsync(loginName, registrationCutoffUtc, cancellationToken);
+
         var invite = await db.HouseholdInvites
             .FirstOrDefaultAsync(candidate => candidate.Id == inviteId
                 && candidate.LoginName == loginName
                 && candidate.AcceptedAtUtc == null
-                && candidate.DeclinedAtUtc == null, cancellationToken);
+                && candidate.DeclinedAtUtc == null
+                && candidate.CreatedAtUtc >= GetActiveInviteCutoffUtc(registrationCutoffUtc), cancellationToken);
 
         if (invite is null)
         {
@@ -128,5 +152,49 @@ public class HouseholdInvitationService(AppDbContext db)
         invite.DeclinedAtUtc = DateTime.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private static DateTime? GetRegistrationCutoffUtc(AppUser? user)
+    {
+        if (user is null)
+        {
+            return null;
+        }
+
+        var firstCredential = user.Credentials.OrderBy(credential => credential.RegDate).FirstOrDefault();
+        return firstCredential?.RegDate;
+    }
+
+    private static DateTime GetActiveInviteCutoffUtc(DateTime? registrationCutoffUtc)
+    {
+        var expirationCutoffUtc = DateTime.UtcNow - InviteLifetime;
+        if (registrationCutoffUtc is null)
+        {
+            return expirationCutoffUtc;
+        }
+
+        return registrationCutoffUtc.Value > expirationCutoffUtc
+            ? registrationCutoffUtc.Value
+            : expirationCutoffUtc;
+    }
+
+    private async Task DiscardObsoletePendingInvitesAsync(string loginName, DateTime? registrationCutoffUtc, CancellationToken cancellationToken)
+    {
+        var activeInviteCutoffUtc = GetActiveInviteCutoffUtc(registrationCutoffUtc);
+
+        var obsoleteInvites = await db.HouseholdInvites
+            .Where(invite => invite.LoginName == loginName
+                && invite.AcceptedAtUtc == null
+                && invite.DeclinedAtUtc == null
+                && invite.CreatedAtUtc < activeInviteCutoffUtc)
+            .ToListAsync(cancellationToken);
+
+        if (obsoleteInvites.Count == 0)
+        {
+            return;
+        }
+
+        db.HouseholdInvites.RemoveRange(obsoleteInvites);
+        await db.SaveChangesAsync(cancellationToken);
     }
 }
