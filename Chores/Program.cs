@@ -88,15 +88,12 @@ app.MapPost("/api/auth/attestation/options", async (HttpContext httpContext) =>
     var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
 
     var existingUser = await db.Users
-        .Include(u => u.Credentials)
         .FirstOrDefaultAsync(u => u.LoginName == username);
 
     if (existingUser is not null)
         return Results.Conflict("That login name is unavailable.");
 
-    var excludeCredentials = existingUser?.Credentials
-        .Select(c => new PublicKeyCredentialDescriptor(c.CredentialId))
-        .ToList() ?? [];
+    var excludeCredentials = new List<PublicKeyCredentialDescriptor>();
 
     var fidoUser = new Fido2User
     {
