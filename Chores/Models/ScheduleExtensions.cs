@@ -10,10 +10,6 @@ public static class ScheduleExtensions
         Schedule.Weekly => "Weekly",
         Schedule.BiWeekly => "Bi-weekly",
         Schedule.Monthly => "Monthly",
-        Schedule.Quarterly => "Quarterly",
-        Schedule.EverySixMonths => "Every 6 months",
-        Schedule.Yearly => "Yearly",
-        Schedule.EveryTwoYears => "Every 2 years",
         _ => schedule.ToString()
     };
 }

@@ -7,9 +7,5 @@ public enum Schedule
     EveryTwoDays,
     Weekly,
     BiWeekly,
-    Monthly,
-    Quarterly,
-    EverySixMonths,
-    Yearly,
-    EveryTwoYears
+    Monthly
 }
