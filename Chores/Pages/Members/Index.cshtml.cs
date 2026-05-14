@@ -26,6 +26,7 @@ public class IndexModel : PageModel
     [BindProperty]
     public string InviteLoginName { get; set; } = string.Empty;
 
+    [TempData]
     public string? InviteResult { get; set; }
 
     public async Task OnGetAsync()
@@ -49,7 +50,7 @@ public class IndexModel : PageModel
 
         await _householdInvitations.CreateInviteAsync(currentUser, normalizedLoginName);
         InviteResult = "Invite sent.";
-        return Page();
+        return RedirectToPage();
     }
 
     private async Task LoadMembersAsync()
