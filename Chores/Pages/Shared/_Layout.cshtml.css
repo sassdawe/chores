@@ -40,9 +40,36 @@ button.accept-policy {
 }
 
 .footer {
-  position: absolute;
-  bottom: 0;
+  position: static;
   width: 100%;
+  padding: 12px 0;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.footer-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.footer-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.footer-item-with-separator {
   white-space: nowrap;
-  line-height: 60px;
+}
+
+.footer-separator {
+  color: inherit;
+}
+
+.footer-item a,
+.footer-item span {
+  color: inherit;
 }

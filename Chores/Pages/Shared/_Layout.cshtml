@@ -72,8 +72,12 @@
     </div>
 
     <footer class="border-top footer text-muted bg-body-tertiary">
-        <div class="container">
-            &copy; 2026 - Chores &mdash; <a asp-page="/Privacy" class="text-muted">Privacy Policy</a>
+        <div class="container footer-content">
+            <span class="footer-item">&copy; 2026 &mdash; Chores</span>
+            <span class="footer-item footer-item-with-separator">
+                <span class="footer-separator" aria-hidden="true">&mdash;</span>
+                <a asp-page="/Privacy" class="text-muted">Privacy Policy</a>
+            </span>
             @{
                 var operatorName = Context.RequestServices
                     .GetRequiredService<IConfiguration>()["InstanceOperator:Name"];
@@ -81,15 +85,18 @@
                     .GetRequiredService<IConfiguration>()["InstanceOperator:Url"];
                 if (!string.IsNullOrWhiteSpace(operatorName))
                 {
-                    <text> &mdash; Hosted by </text>
-                    if (!string.IsNullOrWhiteSpace(operatorUrl))
-                    {
-                        <a href="@operatorUrl" class="text-muted" target="_blank" rel="noopener">@operatorName</a>
-                    }
-                    else
-                    {
-                        <span>@operatorName</span>
-                    }
+                    <span class="footer-item footer-item-with-separator">
+                        <span class="footer-separator" aria-hidden="true">&mdash;</span>
+                        <span>Hosted by</span>
+                        @if (!string.IsNullOrWhiteSpace(operatorUrl))
+                        {
+                            <a href="@operatorUrl" class="text-muted" target="_blank" rel="noopener">@operatorName</a>
+                        }
+                        else
+                        {
+                            <span>@operatorName</span>
+                        }
+                    </span>
                 }
             }
         </div>
