@@ -15,6 +15,7 @@ It records when chores are completed and shows whether each chore is on time or 
 - Mark chores as complete with timestamped history
 - View overdue/on-time status on the dashboard
 - Manage household members and labels
+- Household owners can invite members by login name, and invited users can accept invites from their profile
 - Passwordless authentication with FIDO2/passkeys
 - SQLite persistence (single-container friendly)
 

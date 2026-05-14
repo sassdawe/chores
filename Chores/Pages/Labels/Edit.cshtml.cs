@@ -1,5 +1,6 @@
 using Chores.Data;
 using Chores.Models;
+using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -45,6 +46,12 @@ public class EditModel : PageModel
             return Page();
         }
 
+        if (!LabelColorValidator.TryNormalize(Color, out var normalizedColor))
+        {
+            ModelState.AddModelError(nameof(Color), "Enter a valid hex color.");
+            return Page();
+        }
+
         var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
         if (user is null) return NotFound();
 
@@ -52,7 +59,7 @@ public class EditModel : PageModel
         if (label is null) return NotFound();
 
         label.Name = Name.Trim();
-        label.Color = Color;
+        label.Color = normalizedColor;
         await _db.SaveChangesAsync();
         return RedirectToPage("Index");
     }

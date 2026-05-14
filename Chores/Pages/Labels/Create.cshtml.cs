@@ -1,5 +1,6 @@
 using Chores.Data;
 using Chores.Models;
+using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -30,13 +31,19 @@ public class CreateModel : PageModel
             return Page();
         }
 
+        if (!LabelColorValidator.TryNormalize(Color, out var normalizedColor))
+        {
+            ModelState.AddModelError(nameof(Color), "Enter a valid hex color.");
+            return Page();
+        }
+
         var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
         if (user is null) return NotFound();
 
         _db.Labels.Add(new Label
         {
             Name = Name.Trim(),
-            Color = Color,
+            Color = normalizedColor,
             HouseholdId = user.HouseholdId
         });
 

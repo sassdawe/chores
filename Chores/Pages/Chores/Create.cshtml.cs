@@ -1,5 +1,6 @@
 using Chores.Data;
 using Chores.Models;
+using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -27,21 +28,21 @@ public class CreateModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return;
-        AvailableLabels = await _db.Labels
-            .Where(l => l.HouseholdId == user.HouseholdId)
-            .OrderBy(l => l.Name)
-            .ToListAsync();
+        await LoadAvailableLabelsAsync();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        if (!ModelState.IsValid)
+        {
+            await LoadAvailableLabelsAsync();
+            return Page();
+        }
 
         if (string.IsNullOrWhiteSpace(Name))
         {
             ModelState.AddModelError(nameof(Name), "Name is required.");
+            await LoadAvailableLabelsAsync();
             return Page();
         }
 
@@ -67,5 +68,16 @@ public class CreateModel : PageModel
         _db.Chores.Add(chore);
         await _db.SaveChangesAsync();
         return RedirectToPage("Index");
+    }
+
+    private async Task LoadAvailableLabelsAsync()
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
+        if (user is null) return;
+
+        AvailableLabels = await _db.Labels
+            .Where(l => l.HouseholdId == user.HouseholdId)
+            .OrderBy(l => l.Name)
+            .ToListAsync();
     }
 }

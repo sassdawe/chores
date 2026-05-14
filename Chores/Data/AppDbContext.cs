@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Chore> Chores => Set<Chore>();
     public DbSet<CompletionRecord> CompletionRecords => Set<CompletionRecord>();
     public DbSet<Label> Labels => Set<Label>();
+    public DbSet<HouseholdInvite> HouseholdInvites => Set<HouseholdInvite>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +22,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<FidoCredential>()
             .HasIndex(c => c.CredentialId)
             .IsUnique();
+
+        modelBuilder.Entity<HouseholdInvite>()
+            .HasIndex(i => i.LoginName);
+
+        modelBuilder.Entity<HouseholdInvite>()
+            .HasOne(i => i.InvitedByUser)
+            .WithMany(u => u.SentInvites)
+            .HasForeignKey(i => i.InvitedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // CompletionRecord is append-only; no cascade delete from Chore
         modelBuilder.Entity<CompletionRecord>()
