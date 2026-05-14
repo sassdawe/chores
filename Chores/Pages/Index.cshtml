@@ -7,7 +7,7 @@
 <style>
     .chore-list { list-style: none; padding: 0; margin: 0; }
     .chore-row {
-        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px;
         padding: 14px 16px; margin-bottom: 8px;
         background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 10px;
         box-shadow: 0 1px 4px rgba(0,0,0,.06);
@@ -15,7 +15,10 @@
         transition: background .15s;
     }
     .chore-row:hover { background: var(--bs-tertiary-bg); }
+    .chore-name { min-width: 0; }
     .chore-labels { display:flex; gap:4px; flex-wrap:wrap; }
+    .chore-row .chore-labels { justify-self: center; }
+    .chore-row > .badge { justify-self: end; }
     .label-pill { padding:2px 8px; border-radius:10px; font-size:0.75rem; color:#fff; font-weight:500; }
 </style>
 
@@ -24,14 +27,14 @@
 @if (Model.AllLabels.Any())
 {
     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-        <a href="/" class="badge @(Model.ActiveLabelId == null ? "border border-dark text-dark" : "bg-secondary text-white")"
-           style="text-decoration:none; padding:6px 12px;">All</a>
+        <a href="/" class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">All</a>
         @foreach (var label in Model.AllLabels)
         {
             var isActive = Model.ActiveLabelId == label.Id;
+            var textColor = label.GetAccessibleTextColor();
             <a href="?labelId=@label.Id"
-               class="badge"
-               style="background-color:@label.Color; opacity:@(isActive ? "1" : "0.6"); text-decoration:none; padding:6px 12px; color:#fff;">
+               class="badge filter-chip"
+               style="background-color:@label.Color; border-color:@label.Color; opacity:@(isActive ? "1" : "0.75"); color:@textColor;">
                 @label.Name
             </a>
         }
@@ -53,28 +56,12 @@ else
                     <span class="chore-labels">
                         @foreach (var label in cs.Chore.Labels)
                         {
-                            <span class="label-pill" style="background-color:@label.Color;">@label.Name</span>
+                            <span class="label-pill" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
                         }
                     </span>
                     @{
-                        string badgeClass, badgeText;
-                        if (cs.Adherence.Status == AdherenceStatus.OnTime)
-                        {
-                            badgeClass = "text-bg-success";
-                            badgeText = "On time";
-                        }
-                        else if (cs.Adherence.Status == AdherenceStatus.DueToday)
-                        {
-                            badgeClass = "text-bg-warning";
-                            badgeText = "Due today";
-                        }
-                        else
-                        {
-                            badgeClass = "text-bg-danger";
-                            badgeText = cs.Adherence.DaysOverdue == int.MaxValue
-                                ? "Never done"
-                                : $"{cs.Adherence.DaysOverdue} days overdue";
-                        }
+                        var badgeClass = ScheduleAdherenceService.ToBadgeClass(cs.Chore.Schedule, cs.Adherence);
+                        var badgeText = ScheduleAdherenceService.ToDisplayText(cs.Chore.Schedule, cs.Adherence);
                     }
                     <span class="badge @badgeClass">@badgeText</span>
                 </a>

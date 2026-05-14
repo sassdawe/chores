@@ -40,9 +40,16 @@ else
                         {
                             <span class="badge bg-success">On time</span>
                         }
+                        else if (entry.Adherence.Status == AdherenceStatus.DueSoon)
+                        {
+                            var badgeClass = ScheduleAdherenceService.ToBadgeClass(Model.Chore.Schedule, entry.Adherence);
+                            var badgeText = ScheduleAdherenceService.ToDisplayText(Model.Chore.Schedule, entry.Adherence);
+
+                            <span class="badge @badgeClass">@badgeText</span>
+                        }
                         else if (entry.Adherence.Status == AdherenceStatus.DueToday)
                         {
-                            <span class="badge bg-primary">On due date</span>
+                            <span class="badge @ScheduleAdherenceService.ToBadgeClass(Model.Chore.Schedule, entry.Adherence)">On due date</span>
                         }
                         else if (entry.Adherence.DaysOverdue == 1)
                         {

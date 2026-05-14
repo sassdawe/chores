@@ -33,7 +33,7 @@
                         <label class="d-flex align-items-center gap-1" style="cursor:pointer;">
                             <input type="checkbox" name="SelectedLabelIds" value="@label.Id"
                                    checked="@(Model.SelectedLabelIds.Contains(label.Id) ? "checked" : null)" />
-                            <span class="badge" style="background-color:@label.Color;">@label.Name</span>
+                            <span class="badge" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
                         </label>
                     }
                 </div>
