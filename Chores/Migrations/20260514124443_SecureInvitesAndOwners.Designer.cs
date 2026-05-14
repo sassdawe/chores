@@ -203,6 +203,11 @@ namespace Chores.Migrations
 
                     b.HasIndex("LoginName");
 
+                    b.HasIndex("HouseholdId", "LoginName")
+                        .IsUnique()
+                        .HasFilter("AcceptedAtUtc IS NULL AND DeclinedAtUtc IS NULL")
+                        .HasDatabaseName("IX_HouseholdInvites_PendingHouseholdLoginName");
+
                     b.ToTable("HouseholdInvites");
                 });
 

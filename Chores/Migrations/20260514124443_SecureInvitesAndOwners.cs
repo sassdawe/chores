@@ -72,6 +72,13 @@ namespace Chores.Migrations
                 name: "IX_HouseholdInvites_LoginName",
                 table: "HouseholdInvites",
                 column: "LoginName");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_HouseholdInvites_PendingHouseholdLoginName",
+                table: "HouseholdInvites",
+                columns: ["HouseholdId", "LoginName"],
+                unique: true,
+                filter: "AcceptedAtUtc IS NULL AND DeclinedAtUtc IS NULL");
         }
 
         /// <inheritdoc />

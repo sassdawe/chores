@@ -1,6 +1,7 @@
 using Chores.Data;
 using Chores.Models;
 using Chores.Services;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Chores.Tests;
@@ -247,6 +248,46 @@ public class HouseholdInvitationServiceTests
     }
 
     [Fact]
+    public async Task PendingInviteIndex_RejectsDuplicatePendingInviteForSameHouseholdAndLogin()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+
+        await using var db = CreateSqliteDbContext(connection);
+        await db.Database.EnsureCreatedAsync();
+
+        var household = new Household { Name = "Home" };
+        var owner = new AppUser
+        {
+            LoginName = "owner",
+            Household = household,
+            IsHouseholdOwner = true
+        };
+
+        db.Users.Add(owner);
+        await db.SaveChangesAsync();
+
+        db.HouseholdInvites.Add(new HouseholdInvite
+        {
+            HouseholdId = household.Id,
+            InvitedByUserId = owner.Id,
+            LoginName = "invitee",
+            CreatedAtUtc = DateTime.UtcNow.AddMinutes(-2)
+        });
+        await db.SaveChangesAsync();
+
+        db.HouseholdInvites.Add(new HouseholdInvite
+        {
+            HouseholdId = household.Id,
+            InvitedByUserId = owner.Id,
+            LoginName = "invitee",
+            CreatedAtUtc = DateTime.UtcNow
+        });
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+    }
+
+    [Fact]
     public async Task AcceptInviteAsync_RejectsInviteCreatedBeforeRegistration()
     {
         await using var db = CreateDbContext();
@@ -299,6 +340,15 @@ public class HouseholdInvitationServiceTests
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        return new AppDbContext(options);
+    }
+
+    private static AppDbContext CreateSqliteDbContext(SqliteConnection connection)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
             .Options;
 
         return new AppDbContext(options);

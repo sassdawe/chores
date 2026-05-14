@@ -27,6 +27,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(i => i.LoginName);
 
         modelBuilder.Entity<HouseholdInvite>()
+            .HasIndex(i => new { i.HouseholdId, i.LoginName })
+            .HasDatabaseName("IX_HouseholdInvites_PendingHouseholdLoginName")
+            .HasFilter($"{nameof(HouseholdInvite.AcceptedAtUtc)} IS NULL AND {nameof(HouseholdInvite.DeclinedAtUtc)} IS NULL")
+            .IsUnique();
+
+        modelBuilder.Entity<HouseholdInvite>()
             .HasOne(i => i.InvitedByUser)
             .WithMany(u => u.SentInvites)
             .HasForeignKey(i => i.InvitedByUserId)

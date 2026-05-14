@@ -1,5 +1,6 @@
 using Chores.Data;
 using Chores.Models;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Chores.Services;
@@ -67,15 +68,23 @@ public class HouseholdInvitationService(AppDbContext db)
             return;
         }
 
-        db.HouseholdInvites.Add(new HouseholdInvite
+        var invite = new HouseholdInvite
         {
             HouseholdId = inviter.HouseholdId,
             InvitedByUserId = inviter.Id,
             LoginName = loginName,
             CreatedAtUtc = DateTime.UtcNow
-        });
+        };
+        db.HouseholdInvites.Add(invite);
 
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsPendingInviteConflict(ex))
+        {
+            db.Entry(invite).State = EntityState.Detached;
+        }
     }
 
     public async Task<bool> AcceptInviteAsync(AppUser user, int inviteId, CancellationToken cancellationToken = default)
@@ -196,5 +205,12 @@ public class HouseholdInvitationService(AppDbContext db)
 
         db.HouseholdInvites.RemoveRange(obsoleteInvites);
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool IsPendingInviteConflict(DbUpdateException exception)
+    {
+        return exception.InnerException is SqliteException sqliteException
+            && sqliteException.SqliteErrorCode == 19
+            && sqliteException.Message.Contains("IX_HouseholdInvites_PendingHouseholdLoginName", StringComparison.Ordinal);
     }
 }
