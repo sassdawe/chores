@@ -1,5 +1,6 @@
 using Chores.Data;
 using Chores.Models;
+using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -38,10 +39,7 @@ public class EditModel : PageModel
             .FirstOrDefaultAsync(c => c.Id == id && c.HouseholdId == user.HouseholdId);
         if (chore is null) return NotFound();
 
-        AvailableLabels = await _db.Labels
-            .Where(l => l.HouseholdId == user.HouseholdId)
-            .OrderBy(l => l.Name)
-            .ToListAsync();
+        await LoadAvailableLabelsAsync(user.HouseholdId);
 
         ChoreId = chore.Id;
         Name = chore.Name;
@@ -55,6 +53,9 @@ public class EditModel : PageModel
         if (string.IsNullOrWhiteSpace(Name))
         {
             ModelState.AddModelError(nameof(Name), "Name is required.");
+            var currentUser = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
+            if (currentUser is not null)
+                await LoadAvailableLabelsAsync(currentUser.HouseholdId);
             return Page();
         }
 
@@ -81,5 +82,13 @@ public class EditModel : PageModel
 
         await _db.SaveChangesAsync();
         return RedirectToPage("Index");
+    }
+
+    private async Task LoadAvailableLabelsAsync(int householdId)
+    {
+        AvailableLabels = await _db.Labels
+            .Where(label => label.HouseholdId == householdId)
+            .OrderBy(label => label.Name)
+            .ToListAsync();
     }
 }

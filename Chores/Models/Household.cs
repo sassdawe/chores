@@ -7,4 +7,5 @@ public class Household
 
     public ICollection<AppUser> Members { get; set; } = [];
     public ICollection<Chore> Chores { get; set; } = [];
+    public ICollection<HouseholdInvite> Invites { get; set; } = [];
 }

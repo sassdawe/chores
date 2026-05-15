@@ -21,17 +21,28 @@ else
 }
 
 <div style="max-width:400px;">
-    <h5>Invite a member</h5>
-
-    @if (!string.IsNullOrEmpty(Model.InviteResult))
+    @if (Model.CanInviteMembers)
     {
-        <div class="alert alert-info py-2">@Model.InviteResult</div>
-    }
+        <h5>Invite a member</h5>
 
-    <form method="post" asp-page-handler="Invite">
-        <div class="input-group mb-2">
-            <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
-            <button type="submit" class="btn btn-primary">Invite</button>
-        </div>
-    </form>
+        @if (!string.IsNullOrEmpty(Model.InviteResult))
+        {
+            <div class="alert alert-info py-2">@Model.InviteResult</div>
+        }
+
+        <form method="post" asp-page-handler="Invite">
+            <div class="input-group mb-1">
+                <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
+                <button type="submit" class="btn btn-primary">Invite</button>
+            </div>
+            <span asp-validation-for="InviteLoginName" class="text-danger"></span>
+        </form>
+        <p class="text-muted small mt-2 mb-0">
+            Invites expire after 5 days. If a login name does not exist yet, any invite sent before that person registers is discarded and won’t appear in their profile later.
+        </p>
+    }
+    else
+    {
+        <p class="text-muted mb-0">Only the household owner can send invites.</p>
+    }
 </div>

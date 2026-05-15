@@ -6,6 +6,10 @@
 
 <h2>My Profile</h2>
 <p>Signed in as: <strong>@Model.CurrentUser.LoginName</strong></p>
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info py-2" style="max-width:680px">@Model.StatusMessage</div>
+}
 
 <h4>Passkeys</h4>
 <table class="table table-sm" style="max-width:680px">
@@ -53,6 +57,51 @@
 
 <button id="addPasskeyBtn" class="btn btn-primary mt-2">+ Add passkey</button>
 <p id="passkeyMessage" class="mt-2" style="display:none"></p>
+
+@if (Model.PendingInvites.Any())
+{
+    <h4 class="mt-4">Pending household invites</h4>
+    <table class="table table-sm" style="max-width:680px">
+        <thead>
+            <tr>
+                <th>Household</th>
+                <th>Invited by</th>
+                <th>Sent</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var invite in Model.PendingInvites)
+            {
+                <tr>
+                    <td>@invite.Household.Name</td>
+                    <td>@invite.InvitedByUser.LoginName</td>
+                    <td class="text-nowrap">@invite.CreatedAtUtc.ToLocalTime().ToString("MMM d, yyyy HH:mm")</td>
+                    <td>
+                        @if (Model.CurrentUser.IsHouseholdOwner)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" disabled
+                                    title="Transfer household ownership before joining another household">
+                                Accept
+                            </button>
+                        }
+                        else
+                        {
+                            <form method="post" asp-page-handler="AcceptInvite" asp-route-inviteId="@invite.Id" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-primary">Accept</button>
+                            </form>
+                        }
+                        <form method="post" asp-page-handler="DeclineInvite" asp-route-inviteId="@invite.Id" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Decline</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
 
 @section Scripts {
 <script>

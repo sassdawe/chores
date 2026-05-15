@@ -21,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlite($"Data Source={dbPath}"));
 
 builder.Services.AddScoped<ScheduleAdherenceService>();
+builder.Services.AddScoped<HouseholdInvitationService>();
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opt =>
@@ -80,18 +81,19 @@ app.MapStaticAssets();
 app.MapPost("/api/auth/attestation/options", async (HttpContext httpContext) =>
 {
     var body = await httpContext.Request.ReadFromJsonAsync<UsernameRequest>();
-    var username = body?.Username ?? string.Empty;
+    if (!LoginNameValidator.TryNormalize(body?.Username, out var username))
+        return Results.BadRequest("Invalid login name.");
 
     var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
     var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
 
     var existingUser = await db.Users
-        .Include(u => u.Credentials)
         .FirstOrDefaultAsync(u => u.LoginName == username);
 
-    var excludeCredentials = existingUser?.Credentials
-        .Select(c => new PublicKeyCredentialDescriptor(c.CredentialId))
-        .ToList() ?? [];
+    if (existingUser is not null)
+        return Results.Conflict("That login name is unavailable.");
+
+    var excludeCredentials = new List<PublicKeyCredentialDescriptor>();
 
     var fidoUser = new Fido2User
     {
@@ -126,14 +128,14 @@ app.MapPost("/api/auth/attestation/result", async (HttpContext httpContext) =>
 
     var storedOptions = CredentialCreateOptions.FromJson(storedJson);
     var username = storedOptions.User.Name;
+    if (!LoginNameValidator.TryNormalize(username, out username))
+        return Results.BadRequest("Invalid login name.");
 
     var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
     var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
-
     IsCredentialIdUniqueToUserAsyncDelegate isUnique = async (args, ct) =>
     {
-        var all = await db.FidoCredentials.ToListAsync(ct);
-        return !all.Any(c => c.CredentialId.SequenceEqual(args.CredentialId));
+        return !await db.FidoCredentials.AnyAsync(c => c.CredentialId.SequenceEqual(args.CredentialId), ct);
     };
 
     var result = await fido2.MakeNewCredentialAsync(new MakeNewCredentialParams
@@ -146,19 +148,19 @@ app.MapPost("/api/auth/attestation/result", async (HttpContext httpContext) =>
     var existingUser = await db.Users
         .Include(u => u.Credentials)
         .FirstOrDefaultAsync(u => u.LoginName == username);
+    if (existingUser is not null)
+        return Results.Conflict("That login name is unavailable.");
 
-    AppUser user;
-    if (existingUser is null)
+    var household = new Household { Name = $"{username}'s household" };
+    db.Households.Add(household);
+    var user = new AppUser
     {
-        var household = new Household { Name = $"{username}'s household" };
-        db.Households.Add(household);
-        user = new AppUser { LoginName = username, Household = household };
-        db.Users.Add(user);
-    }
-    else
-    {
-        user = existingUser;
-    }
+        LoginName = username,
+        Household = household,
+        IsHouseholdOwner = true
+    };
+
+    db.Users.Add(user);
 
     user.Credentials.Add(new FidoCredential
     {
@@ -185,7 +187,8 @@ app.MapPost("/api/auth/attestation/result", async (HttpContext httpContext) =>
 app.MapPost("/api/auth/assertion/options", async (HttpContext httpContext) =>
 {
     var body = await httpContext.Request.ReadFromJsonAsync<UsernameRequest>();
-    var username = body?.Username ?? string.Empty;
+    if (!LoginNameValidator.TryNormalize(body?.Username, out var username))
+        return Results.BadRequest("Invalid login name.");
 
     var db = httpContext.RequestServices.GetRequiredService<AppDbContext>();
     var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
@@ -228,16 +231,16 @@ app.MapPost("/api/auth/assertion/result", async (HttpContext httpContext) =>
     var fido2 = httpContext.RequestServices.GetRequiredService<IFido2>();
 
     var rawId = assertionResponse.RawId;
-    var allCreds = await db.FidoCredentials.Include(c => c.User).ToListAsync();
-    var storedCred = allCreds.FirstOrDefault(c => c.CredentialId.SequenceEqual(rawId));
+    var storedCred = await db.FidoCredentials
+        .Include(c => c.User)
+        .FirstOrDefaultAsync(c => c.CredentialId.SequenceEqual(rawId));
     if (storedCred is null)
         return Results.Unauthorized();
 
     IsUserHandleOwnerOfCredentialIdAsync isOwner = async (args, ct) =>
     {
-        var creds = await db.FidoCredentials.Include(c => c.User).ToListAsync(ct);
-        var cred = creds.FirstOrDefault(c => c.CredentialId.SequenceEqual(args.CredentialId));
-        return cred is not null && cred.UserHandle.SequenceEqual(args.UserHandle);
+        return await db.FidoCredentials.AnyAsync(c => c.CredentialId.SequenceEqual(args.CredentialId)
+            && c.UserHandle.SequenceEqual(args.UserHandle), ct);
     };
 
     var result = await fido2.MakeAssertionAsync(new MakeAssertionParams
@@ -321,8 +324,7 @@ app.MapPost("/api/profile/passkey/result", async (HttpContext httpContext) =>
 
     IsCredentialIdUniqueToUserAsyncDelegate isUnique = async (args, ct) =>
     {
-        var all = await db.FidoCredentials.ToListAsync(ct);
-        return !all.Any(c => c.CredentialId.SequenceEqual(args.CredentialId));
+        return !await db.FidoCredentials.AnyAsync(c => c.CredentialId.SequenceEqual(args.CredentialId), ct);
     };
 
     var result = await fido2.MakeNewCredentialAsync(new MakeNewCredentialParams

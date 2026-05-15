@@ -3,6 +3,7 @@ using System;
 using Chores.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Chores.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260514124443_SecureInvitesAndOwners")]
+    partial class SecureInvitesAndOwners
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
@@ -194,14 +197,16 @@ namespace Chores.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("HouseholdId");
+
                     b.HasIndex("InvitedByUserId");
 
                     b.HasIndex("LoginName");
 
                     b.HasIndex("HouseholdId", "LoginName")
                         .IsUnique()
-                        .HasDatabaseName("IX_HouseholdInvites_PendingHouseholdLoginName")
-                        .HasFilter("AcceptedAtUtc IS NULL AND DeclinedAtUtc IS NULL");
+                        .HasFilter("AcceptedAtUtc IS NULL AND DeclinedAtUtc IS NULL")
+                        .HasDatabaseName("IX_HouseholdInvites_PendingHouseholdLoginName");
 
                     b.ToTable("HouseholdInvites");
                 });
