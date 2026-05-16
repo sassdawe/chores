@@ -78,7 +78,7 @@
                     <td>@invite.InvitedByUser.LoginName</td>
                     <td class="text-nowrap">@invite.CreatedAtUtc.ToLocalTime().ToString("MMM d, yyyy HH:mm")</td>
                     <td>
-                        @if (Model.CurrentUser.IsHouseholdOwner)
+                        @if (!Model.CanAcceptHouseholdInvites)
                         {
                             <button class="btn btn-sm btn-outline-secondary" disabled
                                     title="Transfer household ownership before joining another household">

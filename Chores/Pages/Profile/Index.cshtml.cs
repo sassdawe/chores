@@ -14,6 +14,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
     public AppUser CurrentUser { get; set; } = null!;
     public List<FidoCredential> Passkeys { get; set; } = [];
     public List<HouseholdInvite> PendingInvites { get; set; } = [];
+    public bool CanAcceptHouseholdInvites { get; set; }
     [TempData]
     public string? StatusMessage { get; set; }
 
@@ -81,7 +82,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
         if (!await householdInvitations.AcceptInviteAsync(user, inviteId))
         {
-            StatusMessage = user.IsHouseholdOwner
+            StatusMessage = !await householdInvitations.CanAcceptInvitesAsync(user)
                 ? "Transfer household ownership before joining another household."
                 : "That invite is no longer available.";
             await LoadAsync();
@@ -119,6 +120,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
         CurrentUser = user;
         Passkeys = [.. user.Credentials.OrderBy(c => c.RegDate)];
         PendingInvites = await householdInvitations.GetPendingInvitesAsync(user);
+        CanAcceptHouseholdInvites = await householdInvitations.CanAcceptInvitesAsync(user);
         return true;
     }
 }
