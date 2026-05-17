@@ -14,7 +14,7 @@ It records when chores are completed and shows whether each chore is on time or 
   - Monthly
 - Mark chores as complete with timestamped history
 - View overdue/on-time status on the dashboard for all spaces or a selected space
-- Create multiple named spaces and manage chores, members, and labels for each one
+- Create and rename multiple named spaces and manage chores, members, and labels for each one
 - Space owners can invite members by login name, and invited users can accept invites from their profile without leaving their existing spaces
 - Passwordless authentication with FIDO2/passkeys
 - SQLite persistence (single-container friendly)

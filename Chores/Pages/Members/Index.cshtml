@@ -44,6 +44,22 @@
     <div class="col-md-7">
         <h5>@(Model.SelectedHouseholdName ?? "Selected space") members</h5>
 
+        @if (Model.CanInviteMembers)
+        {
+            <form method="post" asp-page-handler="RenameSpace" class="mb-4" style="max-width:400px;">
+                <input type="hidden" name="SelectedHouseholdId" value="@Model.SelectedHouseholdId" />
+                <label for="RenameSpaceName" class="form-label">Space display name</label>
+                <div class="input-group mb-1">
+                    <input id="RenameSpaceName"
+                           name="RenameSpaceName"
+                           class="form-control"
+                           value="@(string.IsNullOrWhiteSpace(Model.RenameSpaceName) ? Model.SelectedHouseholdName : Model.RenameSpaceName)" />
+                    <button type="submit" class="btn btn-outline-primary">Rename</button>
+                </div>
+                <span asp-validation-for="RenameSpaceName" class="text-danger"></span>
+            </form>
+        }
+
 @if (Model.Members.Any())
 {
     <ul class="list-group mb-4" style="max-width:400px;">

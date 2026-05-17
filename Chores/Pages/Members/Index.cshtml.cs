@@ -27,12 +27,16 @@ public class IndexModel : PageModel
 
     public List<HouseholdMembership> Spaces { get; set; } = [];
     public List<HouseholdMembership> Members { get; set; } = [];
+    [BindProperty]
     public int? SelectedHouseholdId { get; set; }
     public string? SelectedHouseholdName { get; set; }
     public bool CanInviteMembers { get; set; }
 
     [BindProperty]
     public string SpaceName { get; set; } = string.Empty;
+
+    [BindProperty]
+    public string RenameSpaceName { get; set; } = string.Empty;
 
     [BindProperty]
     public string InviteLoginName { get; set; } = string.Empty;
@@ -86,6 +90,30 @@ public class IndexModel : PageModel
             IsOwner = true,
             JoinedAtUtc = DateTime.UtcNow
         });
+        await _db.SaveChangesAsync();
+
+        return RedirectToPage(new { householdId = household.Id });
+    }
+
+    public async Task<IActionResult> OnPostRenameSpaceAsync()
+    {
+        await LoadAsync(SelectedHouseholdId);
+
+        var currentUser = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
+        if (currentUser is null) return NotFound();
+        if (SelectedHouseholdId is null) return NotFound();
+        if (!await _householdMemberships.IsOwnerAsync(currentUser.LoginName, SelectedHouseholdId.Value)) return Forbid();
+
+        if (string.IsNullOrWhiteSpace(RenameSpaceName))
+        {
+            ModelState.AddModelError(nameof(RenameSpaceName), "Name is required.");
+            return Page();
+        }
+
+        var household = await _db.Households.FirstOrDefaultAsync(candidate => candidate.Id == SelectedHouseholdId.Value);
+        if (household is null) return NotFound();
+
+        household.Name = RenameSpaceName.Trim();
         await _db.SaveChangesAsync();
 
         return RedirectToPage(new { householdId = household.Id });
