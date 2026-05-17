@@ -49,7 +49,7 @@ namespace Chores.Migrations
 
             migrationBuilder.Sql("""
                 INSERT INTO HouseholdMemberships (UserId, HouseholdId, IsOwner, JoinedAtUtc)
-                SELECT Id, HouseholdId, IsHouseholdOwner, CURRENT_TIMESTAMP
+                SELECT Id, HouseholdId, IsHouseholdOwner, strftime('%Y-%m-%dT%H:%M:%fZ','now')
                 FROM Users
                 """);
 
