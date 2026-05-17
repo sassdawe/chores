@@ -4,14 +4,58 @@
     ViewData["Title"] = "Members";
 }
 
-<h2 class="mb-3">Household Members</h2>
+<h2 class="mb-3">Spaces</h2>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        <h5>Your spaces</h5>
+        @if (Model.Spaces.Any())
+        {
+            <div class="list-group mb-3">
+                @foreach (var space in Model.Spaces)
+                {
+                    <a asp-page="/Members/Index"
+                       asp-route-householdId="@space.HouseholdId"
+                       class="list-group-item list-group-item-action @(space.HouseholdId == Model.SelectedHouseholdId ? "active" : string.Empty)">
+                        @space.Household.Name
+                        @if (space.IsOwner)
+                        {
+                            <span class="badge text-bg-secondary ms-1">Owner</span>
+                        }
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No spaces found.</p>
+        }
+
+        <h5>Create a space</h5>
+        <form method="post" asp-page-handler="CreateSpace" asp-route-householdId="@Model.SelectedHouseholdId">
+            <div class="input-group mb-1">
+                <input name="SpaceName" class="form-control" placeholder="Office, garage, online estate…" value="@Model.SpaceName" />
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+            <span asp-validation-for="SpaceName" class="text-danger"></span>
+        </form>
+    </div>
+
+    <div class="col-md-7">
+        <h5>@(Model.SelectedHouseholdName ?? "Selected space") members</h5>
 
 @if (Model.Members.Any())
 {
     <ul class="list-group mb-4" style="max-width:400px;">
         @foreach (var member in Model.Members)
         {
-            <li class="list-group-item">@member.LoginName</li>
+            <li class="list-group-item">
+                @member.User.LoginName
+                @if (member.IsOwner)
+                {
+                    <span class="badge text-bg-secondary ms-1">Owner</span>
+                }
+            </li>
         }
     </ul>
 }
@@ -20,7 +64,6 @@ else
     <p class="text-muted">No members found.</p>
 }
 
-<div style="max-width:400px;">
     @if (Model.CanInviteMembers)
     {
         <h5>Invite a member</h5>
@@ -30,7 +73,8 @@ else
             <div class="alert alert-info py-2">@Model.InviteResult</div>
         }
 
-        <form method="post" asp-page-handler="Invite">
+        <form method="post" asp-page-handler="Invite" asp-route-householdId="@Model.SelectedHouseholdId">
+            <input type="hidden" name="SelectedHouseholdId" value="@Model.SelectedHouseholdId" />
             <div class="input-group mb-1">
                 <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
                 <button type="submit" class="btn btn-primary">Invite</button>
@@ -43,6 +87,7 @@ else
     }
     else
     {
-        <p class="text-muted mb-0">Only the household owner can send invites.</p>
+        <p class="text-muted mb-0">Only a space owner can send invites.</p>
     }
+    </div>
 </div>

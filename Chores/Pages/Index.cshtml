@@ -22,17 +22,41 @@
     .label-pill { padding:2px 8px; border-radius:10px; font-size:0.75rem; color:#fff; font-weight:500; }
 </style>
 
-<h2 class="mb-3">My Household Chores</h2>
+<h2 class="mb-3">My Chores</h2>
+
+@if (Model.Spaces.Count > 1)
+{
+    <form method="get" class="mb-3" style="max-width:360px;">
+        @if (Model.ActiveLabelId.HasValue)
+        {
+            <input type="hidden" name="labelId" value="@Model.ActiveLabelId" />
+        }
+        <label for="householdId" class="form-label">Space</label>
+        <select id="householdId" name="householdId" class="form-select" onchange="this.form.submit()">
+            <option value="" selected="@(Model.ActiveHouseholdId is null ? "selected" : null)">All spaces</option>
+            @foreach (var space in Model.Spaces)
+            {
+                <option value="@space.HouseholdId" selected="@(Model.ActiveHouseholdId == space.HouseholdId ? "selected" : null)">
+                    @space.Household.Name
+                </option>
+            }
+        </select>
+    </form>
+}
 
 @if (Model.AllLabels.Any())
 {
     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-        <a href="/" class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">All</a>
+        <a asp-page="/Index"
+           asp-route-householdId="@Model.ActiveHouseholdId"
+           class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">All</a>
         @foreach (var label in Model.AllLabels)
         {
             var isActive = Model.ActiveLabelId == label.Id;
             var textColor = label.GetAccessibleTextColor();
-            <a href="?labelId=@label.Id"
+            <a asp-page="/Index"
+               asp-route-labelId="@label.Id"
+               asp-route-householdId="@Model.ActiveHouseholdId"
                class="badge filter-chip"
                style="background-color:@label.Color; border-color:@label.Color; opacity:@(isActive ? "1" : "0.75"); color:@textColor;">
                 @label.Name
@@ -52,7 +76,13 @@ else
         {
             <li>
                 <a class="chore-row" href="/Chores/Complete?id=@cs.Chore.Id">
-                    <span class="chore-name">@cs.Chore.Name</span>
+                    <span class="chore-name">
+                        @cs.Chore.Name
+                        @if (Model.ActiveHouseholdId is null && Model.Spaces.Count > 1)
+                        {
+                            <span class="text-muted small d-block">@cs.Chore.Household.Name</span>
+                        }
+                    </span>
                     <span class="chore-labels">
                         @foreach (var label in cs.Chore.Labels)
                         {

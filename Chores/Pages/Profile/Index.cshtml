@@ -60,11 +60,11 @@
 
 @if (Model.PendingInvites.Any())
 {
-    <h4 class="mt-4">Pending household invites</h4>
+    <h4 class="mt-4">Pending space invites</h4>
     <table class="table table-sm" style="max-width:680px">
         <thead>
             <tr>
-                <th>Household</th>
+                <th>Space</th>
                 <th>Invited by</th>
                 <th>Sent</th>
                 <th>Actions</th>
@@ -81,7 +81,7 @@
                         @if (!Model.CanAcceptHouseholdInvites)
                         {
                             <button class="btn btn-sm btn-outline-secondary" disabled
-                                    title="Transfer household ownership before joining another household">
+                                    title="That invite is not available">
                                 Accept
                             </button>
                         }

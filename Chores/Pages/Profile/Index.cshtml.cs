@@ -82,9 +82,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
         if (!await householdInvitations.AcceptInviteAsync(user, inviteId))
         {
-            StatusMessage = !await householdInvitations.CanAcceptInvitesAsync(user)
-                ? "Transfer household ownership before joining another household."
-                : "That invite is no longer available.";
+            StatusMessage = "That invite is no longer available.";
             await LoadAsync();
             return Page();
         }

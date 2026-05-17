@@ -13,33 +13,52 @@ public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
     private readonly ScheduleAdherenceService _adherence;
+    private readonly HouseholdMembershipService _householdMemberships;
 
-    public IndexModel(AppDbContext db, ScheduleAdherenceService adherence)
+    public IndexModel(
+        AppDbContext db,
+        ScheduleAdherenceService adherence,
+        HouseholdMembershipService householdMemberships)
     {
         _db = db;
         _adherence = adherence;
+        _householdMemberships = householdMemberships;
     }
 
     public List<ChoreStatus> ChoreStatuses { get; set; } = [];
     public List<Label> AllLabels { get; set; } = [];
+    public List<HouseholdMembership> Spaces { get; set; } = [];
     public int? ActiveLabelId { get; set; }
+    public int? ActiveHouseholdId { get; set; }
 
-    public async Task OnGetAsync([FromQuery] int? labelId)
+    public async Task OnGetAsync([FromQuery] int? labelId, [FromQuery] int? householdId)
     {
         ActiveLabelId = labelId;
+        ActiveHouseholdId = householdId;
 
-        var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return;
+        Spaces = await _householdMemberships.GetMembershipsAsync(User.Identity!.Name);
+        var householdIds = Spaces.Select(membership => membership.HouseholdId).ToList();
+        if (householdIds.Count == 0) return;
+
+        if (householdId.HasValue && !householdIds.Contains(householdId.Value))
+        {
+            ActiveHouseholdId = null;
+            householdId = null;
+        }
+
+        var selectedHouseholdIds = householdId.HasValue
+            ? [householdId.Value]
+            : householdIds;
 
         AllLabels = await _db.Labels
-            .Where(l => l.HouseholdId == user.HouseholdId)
+            .Where(l => selectedHouseholdIds.Contains(l.HouseholdId))
             .OrderBy(l => l.Name)
             .ToListAsync();
 
         var choresQuery = _db.Chores
             .Include(c => c.Labels)
-            .Where(c => c.HouseholdId == user.HouseholdId);
+            .Include(c => c.Household)
+            .Where(c => selectedHouseholdIds.Contains(c.HouseholdId));
 
         if (labelId.HasValue)
             choresQuery = choresQuery.Where(c => c.Labels.Any(l => l.Id == labelId.Value));

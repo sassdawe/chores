@@ -1,6 +1,6 @@
 # Chores
 
-Chores is a self-hosted household chore tracker built with ASP.NET Core Razor Pages.  
+Chores is a self-hosted chore tracker for homes, offices, garages, online estates, and other named spaces built with ASP.NET Core Razor Pages.  
 It records when chores are completed and shows whether each chore is on time or overdue based on its schedule.
 
 ## Features
@@ -13,9 +13,9 @@ It records when chores are completed and shows whether each chore is on time or 
   - Bi-weekly
   - Monthly
 - Mark chores as complete with timestamped history
-- View overdue/on-time status on the dashboard
-- Manage household members and labels
-- Household owners can invite members by login name, and invited users can accept invites from their profile
+- View overdue/on-time status on the dashboard for all spaces or a selected space
+- Create multiple named spaces and manage chores, members, and labels for each one
+- Space owners can invite members by login name, and invited users can accept invites from their profile without leaving their existing spaces
 - Passwordless authentication with FIDO2/passkeys
 - SQLite persistence (single-container friendly)
 

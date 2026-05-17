@@ -9,23 +9,18 @@ namespace Chores.Tests;
 public class HouseholdInvitationServiceTests
 {
     [Fact]
-    public async Task CreateInviteAsync_RequiresHouseholdOwner()
+    public async Task CreateInviteAsync_RequiresSpaceOwner()
     {
         await using var db = CreateDbContext();
         var household = new Household { Name = "Home" };
-        var inviter = new AppUser
-        {
-            LoginName = "member",
-            Household = household,
-            IsHouseholdOwner = false
-        };
+        var inviter = CreateUser("member", household, isOwner: false);
 
         db.Users.Add(inviter);
         await db.SaveChangesAsync();
 
         var sut = new HouseholdInvitationService(db);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.CreateInviteAsync(inviter, "invitee"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.CreateInviteAsync(inviter, household.Id, "invitee"));
     }
 
     [Fact]
@@ -33,60 +28,47 @@ public class HouseholdInvitationServiceTests
     {
         await using var db = CreateDbContext();
         var household = new Household { Name = "Home" };
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = household,
-            IsHouseholdOwner = true
-        };
+        var owner = CreateUser("owner", household, isOwner: true);
 
         db.Users.Add(owner);
         await db.SaveChangesAsync();
 
         var sut = new HouseholdInvitationService(db);
 
-        await sut.CreateInviteAsync(owner, "invitee");
-        await sut.CreateInviteAsync(owner, "invitee");
+        await sut.CreateInviteAsync(owner, household.Id, "invitee");
+        await sut.CreateInviteAsync(owner, household.Id, "invitee");
 
         Assert.Single(db.HouseholdInvites);
     }
 
     [Fact]
-    public async Task AcceptInviteAsync_MovesUserAndClosesCompetingInvites()
+    public async Task CreateInviteAsync_IgnoresExistingSpaceMember()
+    {
+        await using var db = CreateDbContext();
+        var household = new Household { Name = "Home" };
+        var owner = CreateUser("owner", household, isOwner: true);
+        var member = CreateUser("member", household, isOwner: false);
+
+        db.Users.AddRange(owner, member);
+        await db.SaveChangesAsync();
+
+        var sut = new HouseholdInvitationService(db);
+        await sut.CreateInviteAsync(owner, household.Id, member.LoginName);
+
+        Assert.Empty(db.HouseholdInvites);
+    }
+
+    [Fact]
+    public async Task AcceptInviteAsync_AddsMembershipAndKeepsOtherInvitesPending()
     {
         await using var db = CreateDbContext();
         var sourceHousehold = new Household { Name = "Source" };
         var destinationHousehold = new Household { Name = "Destination" };
         var anotherHousehold = new Household { Name = "Another" };
 
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = destinationHousehold,
-            IsHouseholdOwner = true
-        };
-
-        var anotherOwner = new AppUser
-        {
-            LoginName = "another-owner",
-            Household = anotherHousehold,
-            IsHouseholdOwner = true
-        };
-
-        var invitedUser = new AppUser
-        {
-            LoginName = "invitee",
-            Household = sourceHousehold,
-            IsHouseholdOwner = false
-        };
-        invitedUser.Credentials.Add(new FidoCredential
-        {
-            CredentialId = [1],
-            PublicKey = [2],
-            UserHandle = [3],
-            CredType = "public-key",
-            RegDate = DateTime.UtcNow.AddHours(-2)
-        });
+        var owner = CreateUser("owner", destinationHousehold, isOwner: true);
+        var anotherOwner = CreateUser("another-owner", anotherHousehold, isOwner: true);
+        var invitedUser = CreateUser("invitee", sourceHousehold, isOwner: true);
 
         db.Users.AddRange(owner, anotherOwner, invitedUser);
         await db.SaveChangesAsync();
@@ -112,38 +94,26 @@ public class HouseholdInvitationServiceTests
         var sut = new HouseholdInvitationService(db);
         var accepted = await sut.AcceptInviteAsync(invitedUser, primaryInvite.Id);
 
+        var memberships = await db.HouseholdMemberships
+            .Where(membership => membership.UserId == invitedUser.Id)
+            .Select(membership => membership.HouseholdId)
+            .ToListAsync();
+
         Assert.True(accepted);
-        Assert.Equal(destinationHousehold.Id, invitedUser.HouseholdId);
+        Assert.Contains(sourceHousehold.Id, memberships);
+        Assert.Contains(destinationHousehold.Id, memberships);
         Assert.NotNull(primaryInvite.AcceptedAtUtc);
-        Assert.NotNull(competingInvite.DeclinedAtUtc);
+        Assert.Null(competingInvite.DeclinedAtUtc);
     }
 
     [Fact]
-    public async Task AcceptInviteAsync_RejectsEstablishedHouseholdOwner()
+    public async Task AcceptInviteAsync_AllowsEstablishedOwnerToJoinAnotherSpace()
     {
         await using var db = CreateDbContext();
         var currentHousehold = new Household { Name = "Current" };
         var invitedHousehold = new Household { Name = "Invited" };
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = currentHousehold,
-            IsHouseholdOwner = true
-        };
-        owner.Credentials.Add(new FidoCredential
-        {
-            CredentialId = [1],
-            PublicKey = [2],
-            UserHandle = [3],
-            CredType = "public-key",
-            RegDate = DateTime.UtcNow.AddHours(-1)
-        });
-        var invitingOwner = new AppUser
-        {
-            LoginName = "inviting-owner",
-            Household = invitedHousehold,
-            IsHouseholdOwner = true
-        };
+        var owner = CreateUser("owner", currentHousehold, isOwner: true);
+        var invitingOwner = CreateUser("inviting-owner", invitedHousehold, isOwner: true);
         var currentChore = new Chore
         {
             Name = "Keep current household",
@@ -169,62 +139,14 @@ public class HouseholdInvitationServiceTests
         var sut = new HouseholdInvitationService(db);
         var accepted = await sut.AcceptInviteAsync(owner, invite.Id);
 
-        Assert.False(accepted);
-        Assert.Null(invite.AcceptedAtUtc);
-        Assert.Equal(currentHousehold.Id, owner.HouseholdId);
-    }
-
-    [Fact]
-    public async Task AcceptInviteAsync_AllowsOwnerOfEmptyRegistrationHousehold()
-    {
-        await using var db = CreateDbContext();
-        var registrationHousehold = new Household { Name = "invitee's household" };
-        var invitedHousehold = new Household { Name = "Invited" };
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = invitedHousehold,
-            IsHouseholdOwner = true
-        };
-        var invitedUser = new AppUser
-        {
-            LoginName = "invitee",
-            Household = registrationHousehold,
-            IsHouseholdOwner = true
-        };
-        invitedUser.Credentials.Add(new FidoCredential
-        {
-            CredentialId = [1],
-            PublicKey = [2],
-            UserHandle = [3],
-            CredType = "public-key",
-            RegDate = DateTime.UtcNow.AddHours(-1)
-        });
-
-        db.Users.AddRange(owner, invitedUser);
-        await db.SaveChangesAsync();
-
-        var invite = new HouseholdInvite
-        {
-            HouseholdId = invitedHousehold.Id,
-            InvitedByUserId = owner.Id,
-            LoginName = invitedUser.LoginName,
-            CreatedAtUtc = DateTime.UtcNow
-        };
-
-        db.HouseholdInvites.Add(invite);
-        await db.SaveChangesAsync();
-        db.ChangeTracker.Clear();
-
-        var reloadedInvitedUser = await db.Users.FirstAsync(user => user.LoginName == invitedUser.LoginName);
-        var sut = new HouseholdInvitationService(db);
-        var accepted = await sut.AcceptInviteAsync(reloadedInvitedUser, invite.Id);
-        var acceptedInvite = await db.HouseholdInvites.FirstAsync(candidate => candidate.Id == invite.Id);
-
         Assert.True(accepted);
-        Assert.Equal(invitedHousehold.Id, reloadedInvitedUser.HouseholdId);
-        Assert.False(reloadedInvitedUser.IsHouseholdOwner);
-        Assert.NotNull(acceptedInvite.AcceptedAtUtc);
+        Assert.NotNull(invite.AcceptedAtUtc);
+        Assert.True(await db.HouseholdMemberships.AnyAsync(membership => membership.UserId == owner.Id
+            && membership.HouseholdId == currentHousehold.Id
+            && membership.IsOwner));
+        Assert.True(await db.HouseholdMemberships.AnyAsync(membership => membership.UserId == owner.Id
+            && membership.HouseholdId == invitedHousehold.Id
+            && !membership.IsOwner));
     }
 
     [Fact]
@@ -233,26 +155,8 @@ public class HouseholdInvitationServiceTests
         await using var db = CreateDbContext();
         var sourceHousehold = new Household { Name = "Source" };
         var destinationHousehold = new Household { Name = "Destination" };
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = destinationHousehold,
-            IsHouseholdOwner = true
-        };
-        var invitedUser = new AppUser
-        {
-            LoginName = "invitee",
-            Household = sourceHousehold,
-            IsHouseholdOwner = false
-        };
-        invitedUser.Credentials.Add(new FidoCredential
-        {
-            CredentialId = [1],
-            PublicKey = [2],
-            UserHandle = [3],
-            CredType = "public-key",
-            RegDate = DateTime.UtcNow.AddHours(-1)
-        });
+        var owner = CreateUser("owner", destinationHousehold, isOwner: true);
+        var invitedUser = CreateUser("invitee", sourceHousehold, isOwner: false, credentialAge: TimeSpan.FromHours(1));
 
         db.Users.AddRange(owner, invitedUser);
         await db.SaveChangesAsync();
@@ -288,12 +192,7 @@ public class HouseholdInvitationServiceTests
     {
         await using var db = CreateDbContext();
         var household = new Household { Name = "Home" };
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = household,
-            IsHouseholdOwner = true
-        };
+        var owner = CreateUser("owner", household, isOwner: true);
 
         db.Users.Add(owner);
         await db.SaveChangesAsync();
@@ -308,7 +207,7 @@ public class HouseholdInvitationServiceTests
         await db.SaveChangesAsync();
 
         var sut = new HouseholdInvitationService(db);
-        await sut.CreateInviteAsync(owner, "invitee");
+        await sut.CreateInviteAsync(owner, household.Id, "invitee");
 
         var invites = db.HouseholdInvites.OrderBy(invite => invite.CreatedAtUtc).ToList();
         Assert.Single(invites);
@@ -325,12 +224,7 @@ public class HouseholdInvitationServiceTests
         await db.Database.EnsureCreatedAsync();
 
         var household = new Household { Name = "Home" };
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = household,
-            IsHouseholdOwner = true
-        };
+        var owner = CreateUser("owner", household, isOwner: true);
 
         db.Users.Add(owner);
         await db.SaveChangesAsync();
@@ -361,26 +255,8 @@ public class HouseholdInvitationServiceTests
         await using var db = CreateDbContext();
         var currentHousehold = new Household { Name = "Current" };
         var invitedHousehold = new Household { Name = "Invited" };
-        var owner = new AppUser
-        {
-            LoginName = "owner",
-            Household = invitedHousehold,
-            IsHouseholdOwner = true
-        };
-        var invitedUser = new AppUser
-        {
-            LoginName = "invitee",
-            Household = currentHousehold,
-            IsHouseholdOwner = false
-        };
-        invitedUser.Credentials.Add(new FidoCredential
-        {
-            CredentialId = [1],
-            PublicKey = [2],
-            UserHandle = [3],
-            CredType = "public-key",
-            RegDate = DateTime.UtcNow.AddHours(-1)
-        });
+        var owner = CreateUser("owner", invitedHousehold, isOwner: true);
+        var invitedUser = CreateUser("invitee", currentHousehold, isOwner: false, credentialAge: TimeSpan.FromHours(1));
 
         db.Users.AddRange(owner, invitedUser);
         await db.SaveChangesAsync();
@@ -400,8 +276,34 @@ public class HouseholdInvitationServiceTests
         var accepted = await sut.AcceptInviteAsync(invitedUser, invite.Id);
 
         Assert.False(accepted);
-        Assert.Equal(currentHousehold.Id, invitedUser.HouseholdId);
+        Assert.False(await db.HouseholdMemberships.AnyAsync(membership => membership.UserId == invitedUser.Id
+            && membership.HouseholdId == invitedHousehold.Id));
         Assert.DoesNotContain(db.HouseholdInvites, pendingInvite => pendingInvite.Id == invite.Id);
+    }
+
+    private static AppUser CreateUser(
+        string loginName,
+        Household household,
+        bool isOwner,
+        TimeSpan? credentialAge = null)
+    {
+        var user = new AppUser { LoginName = loginName };
+        user.HouseholdMemberships.Add(new HouseholdMembership
+        {
+            Household = household,
+            IsOwner = isOwner,
+            JoinedAtUtc = DateTime.UtcNow
+        });
+        user.Credentials.Add(new FidoCredential
+        {
+            CredentialId = Guid.NewGuid().ToByteArray(),
+            PublicKey = Guid.NewGuid().ToByteArray(),
+            UserHandle = Guid.NewGuid().ToByteArray(),
+            CredType = "public-key",
+            RegDate = DateTime.UtcNow - (credentialAge ?? TimeSpan.FromHours(2))
+        });
+
+        return user;
     }
 
     private static AppDbContext CreateDbContext()

@@ -1,5 +1,6 @@
 using Chores.Data;
 using Chores.Models;
+using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -10,19 +11,26 @@ namespace Chores.Pages.Chores;
 public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly HouseholdMembershipService _householdMemberships;
 
-    public IndexModel(AppDbContext db) => _db = db;
+    public IndexModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    {
+        _db = db;
+        _householdMemberships = householdMemberships;
+    }
 
     public List<Chore> Chores { get; set; } = [];
 
     public async Task OnGetAsync()
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return;
+        var householdIds = await _householdMemberships.GetHouseholdIdsAsync(User.Identity!.Name);
+        if (householdIds.Count == 0) return;
 
         Chores = await _db.Chores
-            .Where(c => c.HouseholdId == user.HouseholdId)
-            .OrderBy(c => c.Name)
+            .Include(c => c.Household)
+            .Where(c => householdIds.Contains(c.HouseholdId))
+            .OrderBy(c => c.Household.Name)
+            .ThenBy(c => c.Name)
             .ToListAsync();
     }
 }

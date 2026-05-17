@@ -12,8 +12,13 @@ namespace Chores.Pages.Chores;
 public class CreateModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly HouseholdMembershipService _householdMemberships;
 
-    public CreateModel(AppDbContext db) => _db = db;
+    public CreateModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    {
+        _db = db;
+        _householdMemberships = householdMemberships;
+    }
 
     [BindProperty]
     public string Name { get; set; } = string.Empty;
@@ -24,10 +29,15 @@ public class CreateModel : PageModel
     [BindProperty]
     public List<int> SelectedLabelIds { get; set; } = [];
 
+    [BindProperty]
+    public int HouseholdId { get; set; }
+
+    public List<HouseholdMembership> Spaces { get; set; } = [];
     public List<Label> AvailableLabels { get; set; } = [];
 
-    public async Task OnGetAsync()
+    public async Task OnGetAsync([FromQuery] int? householdId)
     {
+        await LoadSpacesAsync(householdId);
         await LoadAvailableLabelsAsync();
     }
 
@@ -35,6 +45,7 @@ public class CreateModel : PageModel
     {
         if (!ModelState.IsValid)
         {
+            await LoadSpacesAsync(HouseholdId);
             await LoadAvailableLabelsAsync();
             return Page();
         }
@@ -42,24 +53,26 @@ public class CreateModel : PageModel
         if (string.IsNullOrWhiteSpace(Name))
         {
             ModelState.AddModelError(nameof(Name), "Name is required.");
+            await LoadSpacesAsync(HouseholdId);
             await LoadAvailableLabelsAsync();
             return Page();
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
         if (user is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(user.LoginName, HouseholdId)) return NotFound();
 
         var chore = new Chore
         {
             Name = Name.Trim(),
             Schedule = Schedule,
-            HouseholdId = user.HouseholdId
+            HouseholdId = HouseholdId
         };
 
         if (SelectedLabelIds.Count > 0)
         {
             var labels = await _db.Labels
-                .Where(l => SelectedLabelIds.Contains(l.Id) && l.HouseholdId == user.HouseholdId)
+                .Where(l => SelectedLabelIds.Contains(l.Id) && l.HouseholdId == HouseholdId)
                 .ToListAsync();
             foreach (var label in labels)
                 chore.Labels.Add(label);
@@ -70,13 +83,19 @@ public class CreateModel : PageModel
         return RedirectToPage("Index");
     }
 
+    private async Task LoadSpacesAsync(int? householdId = null)
+    {
+        Spaces = await _householdMemberships.GetMembershipsAsync(User.Identity!.Name);
+        HouseholdId = householdId.HasValue && Spaces.Any(space => space.HouseholdId == householdId.Value)
+            ? householdId.Value
+            : Spaces.FirstOrDefault()?.HouseholdId ?? 0;
+    }
+
     private async Task LoadAvailableLabelsAsync()
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return;
-
+        if (HouseholdId == 0) return;
         AvailableLabels = await _db.Labels
-            .Where(l => l.HouseholdId == user.HouseholdId)
+            .Where(l => l.HouseholdId == HouseholdId)
             .OrderBy(l => l.Name)
             .ToListAsync();
     }
