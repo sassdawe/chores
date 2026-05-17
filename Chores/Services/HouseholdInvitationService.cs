@@ -11,7 +11,7 @@ public class HouseholdInvitationService(AppDbContext db)
 
     public async Task<List<HouseholdInvite>> GetPendingInvitesAsync(AppUser user, CancellationToken cancellationToken = default)
     {
-        var registrationCutoffUtc = GetRegistrationCutoffUtc(user);
+        var registrationCutoffUtc = await GetRegistrationCutoffUtcAsync(user, cancellationToken);
         if (registrationCutoffUtc is null)
         {
             return [];
@@ -31,11 +31,15 @@ public class HouseholdInvitationService(AppDbContext db)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task CreateInviteAsync(AppUser inviter, string loginName, CancellationToken cancellationToken = default)
+    public async Task CreateInviteAsync(AppUser inviter, int householdId, string loginName, CancellationToken cancellationToken = default)
     {
-        if (!inviter.IsHouseholdOwner)
+        var canInvite = await db.HouseholdMemberships
+            .AnyAsync(membership => membership.UserId == inviter.Id
+                && membership.HouseholdId == householdId
+                && membership.IsOwner, cancellationToken);
+        if (!canInvite)
         {
-            throw new InvalidOperationException("Only household owners can invite members.");
+            throw new InvalidOperationException("Only space owners can invite members.");
         }
 
         if (inviter.LoginName == loginName)
@@ -48,16 +52,17 @@ public class HouseholdInvitationService(AppDbContext db)
             .Include(user => user.Credentials)
             .FirstOrDefaultAsync(user => user.LoginName == loginName, cancellationToken);
 
-        if (existingUser is not null && existingUser.HouseholdId == inviter.HouseholdId)
+        if (existingUser is not null && await db.HouseholdMemberships
+            .AnyAsync(membership => membership.UserId == existingUser.Id && membership.HouseholdId == householdId, cancellationToken))
         {
             return;
         }
 
-        var registrationCutoffUtc = GetRegistrationCutoffUtc(existingUser);
+        var registrationCutoffUtc = await GetRegistrationCutoffUtcAsync(existingUser, cancellationToken);
         await DiscardObsoletePendingInvitesAsync(loginName, registrationCutoffUtc, cancellationToken);
 
         var existingInvite = await db.HouseholdInvites
-            .FirstOrDefaultAsync(invite => invite.HouseholdId == inviter.HouseholdId
+            .FirstOrDefaultAsync(invite => invite.HouseholdId == householdId
                 && invite.LoginName == loginName
                 && invite.AcceptedAtUtc == null
                 && invite.DeclinedAtUtc == null
@@ -70,7 +75,7 @@ public class HouseholdInvitationService(AppDbContext db)
 
         var invite = new HouseholdInvite
         {
-            HouseholdId = inviter.HouseholdId,
+            HouseholdId = householdId,
             InvitedByUserId = inviter.Id,
             LoginName = loginName,
             CreatedAtUtc = DateTime.UtcNow
@@ -89,12 +94,7 @@ public class HouseholdInvitationService(AppDbContext db)
 
     public async Task<bool> AcceptInviteAsync(AppUser user, int inviteId, CancellationToken cancellationToken = default)
     {
-        if (user.IsHouseholdOwner)
-        {
-            return false;
-        }
-
-        var registrationCutoffUtc = GetRegistrationCutoffUtc(user);
+        var registrationCutoffUtc = await GetRegistrationCutoffUtcAsync(user, cancellationToken);
         if (registrationCutoffUtc is null)
         {
             return false;
@@ -114,26 +114,29 @@ public class HouseholdInvitationService(AppDbContext db)
             return false;
         }
 
-        user.HouseholdId = invite.HouseholdId;
-        user.IsHouseholdOwner = false;
-
         var decisionTime = DateTime.UtcNow;
         invite.AcceptedAtUtc = decisionTime;
 
-        var otherPendingInvites = await db.HouseholdInvites
-            .Where(candidate => candidate.LoginName == user.LoginName
-                && candidate.Id != invite.Id
-                && candidate.AcceptedAtUtc == null
-                && candidate.DeclinedAtUtc == null)
-            .ToListAsync(cancellationToken);
-
-        foreach (var pendingInvite in otherPendingInvites)
+        var hasMembership = await db.HouseholdMemberships
+            .AnyAsync(membership => membership.UserId == user.Id && membership.HouseholdId == invite.HouseholdId, cancellationToken);
+        if (!hasMembership)
         {
-            pendingInvite.DeclinedAtUtc = decisionTime;
+            db.HouseholdMemberships.Add(new HouseholdMembership
+            {
+                UserId = user.Id,
+                HouseholdId = invite.HouseholdId,
+                IsOwner = false,
+                JoinedAtUtc = decisionTime
+            });
         }
 
         await db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<bool> CanAcceptInvitesAsync(AppUser user, CancellationToken cancellationToken = default)
+    {
+        return await db.Users.AnyAsync(candidate => candidate.Id == user.Id, cancellationToken);
     }
 
     public async Task<bool> DeclineInviteAsync(string loginName, int inviteId, CancellationToken cancellationToken = default)
@@ -143,7 +146,7 @@ public class HouseholdInvitationService(AppDbContext db)
             .Include(user => user.Credentials)
             .FirstOrDefaultAsync(user => user.LoginName == loginName, cancellationToken);
 
-        var registrationCutoffUtc = GetRegistrationCutoffUtc(existingUser);
+        var registrationCutoffUtc = await GetRegistrationCutoffUtcAsync(existingUser, cancellationToken);
         await DiscardObsoletePendingInvitesAsync(loginName, registrationCutoffUtc, cancellationToken);
 
         var invite = await db.HouseholdInvites
@@ -163,7 +166,7 @@ public class HouseholdInvitationService(AppDbContext db)
         return true;
     }
 
-    private static DateTime? GetRegistrationCutoffUtc(AppUser? user)
+    private async Task<DateTime?> GetRegistrationCutoffUtcAsync(AppUser? user, CancellationToken cancellationToken)
     {
         if (user is null)
         {
@@ -171,7 +174,16 @@ public class HouseholdInvitationService(AppDbContext db)
         }
 
         var firstCredential = user.Credentials.OrderBy(credential => credential.RegDate).FirstOrDefault();
-        return firstCredential?.RegDate;
+        if (firstCredential is not null)
+        {
+            return firstCredential.RegDate;
+        }
+
+        return await db.FidoCredentials
+            .Where(credential => credential.UserId == user.Id)
+            .OrderBy(credential => credential.RegDate)
+            .Select(credential => (DateTime?)credential.RegDate)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private static DateTime GetActiveInviteCutoffUtc(DateTime? registrationCutoffUtc)

@@ -1,5 +1,6 @@
 using Chores.Data;
 using Chores.Models;
+using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,8 +12,13 @@ namespace Chores.Pages.Chores;
 public class CompleteModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly HouseholdMembershipService _householdMemberships;
 
-    public CompleteModel(AppDbContext db) => _db = db;
+    public CompleteModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    {
+        _db = db;
+        _householdMemberships = householdMemberships;
+    }
 
     public Chore Chore { get; set; } = null!;
 
@@ -21,11 +27,9 @@ public class CompleteModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
-
-        var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id && c.HouseholdId == user.HouseholdId);
+        var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id);
         if (chore is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId)) return NotFound();
 
         Chore = chore;
         CompletedAt = DateTime.Now;
@@ -37,8 +41,9 @@ public class CompleteModel : PageModel
         var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
         if (user is null) return NotFound();
 
-        var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id && c.HouseholdId == user.HouseholdId);
+        var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id);
         if (chore is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(user.LoginName, chore.HouseholdId)) return NotFound();
 
         // Clamp to now — never allow future completions
         var completedAtUtc = DateTime.SpecifyKind(CompletedAt, DateTimeKind.Local).ToUniversalTime();

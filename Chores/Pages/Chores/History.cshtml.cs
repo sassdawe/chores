@@ -11,19 +11,20 @@ namespace Chores.Pages.Chores;
 public record CompletionEntry(CompletionRecord Record, ScheduleAdherence? Adherence);
 
 [Authorize]
-public class HistoryModel(AppDbContext db, ScheduleAdherenceService adherenceService) : PageModel
+public class HistoryModel(
+    AppDbContext db,
+    ScheduleAdherenceService adherenceService,
+    HouseholdMembershipService householdMemberships) : PageModel
 {
     public Chore Chore { get; set; } = null!;
     public List<CompletionEntry> Entries { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var user = await db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return Forbid();
-
         var chore = await db.Chores
-            .FirstOrDefaultAsync(c => c.Id == id && c.HouseholdId == user.HouseholdId);
+            .FirstOrDefaultAsync(c => c.Id == id);
         if (chore is null) return NotFound();
+        if (!await householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId)) return NotFound();
 
         Chore = chore;
 

@@ -22,6 +22,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 
 builder.Services.AddScoped<ScheduleAdherenceService>();
 builder.Services.AddScoped<HouseholdInvitationService>();
+builder.Services.AddScoped<HouseholdMembershipService>();
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opt =>
@@ -151,16 +152,20 @@ app.MapPost("/api/auth/attestation/result", async (HttpContext httpContext) =>
     if (existingUser is not null)
         return Results.Conflict("That login name is unavailable.");
 
-    var household = new Household { Name = $"{username}'s household" };
+    var household = new Household { Name = $"{username}'s space" };
     db.Households.Add(household);
     var user = new AppUser
     {
-        LoginName = username,
-        Household = household,
-        IsHouseholdOwner = true
+        LoginName = username
     };
 
     db.Users.Add(user);
+    user.HouseholdMemberships.Add(new HouseholdMembership
+    {
+        Household = household,
+        IsOwner = true,
+        JoinedAtUtc = DateTime.UtcNow
+    });
 
     user.Credentials.Add(new FidoCredential
     {

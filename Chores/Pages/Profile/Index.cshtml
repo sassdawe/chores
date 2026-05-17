@@ -11,15 +11,47 @@
     <div class="alert alert-info py-2" style="max-width:680px">@Model.StatusMessage</div>
 }
 
-<div class="mb-4 d-flex gap-2 flex-wrap">
-    <form method="post" asp-page-handler="Export" style="display:inline">
-        @Html.AntiForgeryToken()
-        <button type="submit" class="btn btn-outline-primary">Export household data (JSON)</button>
-    </form>
-    <form method="post" asp-page-handler="ChoreListExport" style="display:inline">
-        @Html.AntiForgeryToken()
-        <button type="submit" class="btn btn-outline-secondary">Export chore names and schedules (JSON)</button>
-    </form>
+<div class="mb-4">
+    <h4>Export data</h4>
+    @if (Model.Spaces.Any())
+    {
+        <div class="d-flex gap-2 flex-wrap">
+            <form method="post" asp-page-handler="Export" class="d-flex gap-2 align-items-end flex-wrap">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="FullExportHouseholdId" class="form-label">Space</label>
+                    <select id="FullExportHouseholdId" name="ExportHouseholdId" class="form-select">
+                        @foreach (var space in Model.Spaces)
+                        {
+                            <option value="@space.HouseholdId" selected="@(space.HouseholdId == Model.ExportHouseholdId)">
+                                @space.Household.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-outline-primary">Export household data (JSON)</button>
+            </form>
+            <form method="post" asp-page-handler="ChoreListExport" class="d-flex gap-2 align-items-end flex-wrap">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="ChoreListExportHouseholdId" class="form-label">Space</label>
+                    <select id="ChoreListExportHouseholdId" name="ExportHouseholdId" class="form-select">
+                        @foreach (var space in Model.Spaces)
+                        {
+                            <option value="@space.HouseholdId" selected="@(space.HouseholdId == Model.ExportHouseholdId)">
+                                @space.Household.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-outline-secondary">Export chore names and schedules (JSON)</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted mb-0">Create a space before exporting chore data.</p>
+    }
 </div>
 
 <h4>Passkeys</h4>
@@ -71,11 +103,11 @@
 
 @if (Model.PendingInvites.Any())
 {
-    <h4 class="mt-4">Pending household invites</h4>
+    <h4 class="mt-4">Pending space invites</h4>
     <table class="table table-sm" style="max-width:680px">
         <thead>
             <tr>
-                <th>Household</th>
+                <th>Space</th>
                 <th>Invited by</th>
                 <th>Sent</th>
                 <th>Actions</th>
@@ -89,10 +121,10 @@
                     <td>@invite.InvitedByUser.LoginName</td>
                     <td class="text-nowrap">@invite.CreatedAtUtc.ToLocalTime().ToString("MMM d, yyyy HH:mm")</td>
                     <td>
-                        @if (Model.CurrentUser.IsHouseholdOwner)
+                        @if (!Model.CanAcceptHouseholdInvites)
                         {
                             <button class="btn btn-sm btn-outline-secondary" disabled
-                                    title="Transfer household ownership before joining another household">
+                                    title="You can't accept invites yet — register a passkey first.">
                                 Accept
                             </button>
                         }

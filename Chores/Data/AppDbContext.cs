@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<CompletionRecord> CompletionRecords => Set<CompletionRecord>();
     public DbSet<Label> Labels => Set<Label>();
     public DbSet<HouseholdInvite> HouseholdInvites => Set<HouseholdInvite>();
+    public DbSet<HouseholdMembership> HouseholdMemberships => Set<HouseholdMembership>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,6 +23,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<FidoCredential>()
             .HasIndex(c => c.CredentialId)
             .IsUnique();
+
+        modelBuilder.Entity<HouseholdMembership>()
+            .HasIndex(m => new { m.UserId, m.HouseholdId })
+            .IsUnique();
+
+        modelBuilder.Entity<HouseholdMembership>()
+            .HasOne(m => m.User)
+            .WithMany(u => u.HouseholdMemberships)
+            .HasForeignKey(m => m.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<HouseholdMembership>()
+            .HasOne(m => m.Household)
+            .WithMany(h => h.Memberships)
+            .HasForeignKey(m => m.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<HouseholdInvite>()
             .HasIndex(i => i.LoginName);

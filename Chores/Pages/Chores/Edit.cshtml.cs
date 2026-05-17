@@ -12,8 +12,13 @@ namespace Chores.Pages.Chores;
 public class EditModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly HouseholdMembershipService _householdMemberships;
 
-    public EditModel(AppDbContext db) => _db = db;
+    public EditModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    {
+        _db = db;
+        _householdMemberships = householdMemberships;
+    }
 
     [BindProperty]
     public int ChoreId { get; set; }
@@ -28,22 +33,23 @@ public class EditModel : PageModel
     public List<int> SelectedLabelIds { get; set; } = [];
 
     public List<Label> AvailableLabels { get; set; } = [];
+    public string HouseholdName { get; set; } = string.Empty;
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
-
         var chore = await _db.Chores
             .Include(c => c.Labels)
-            .FirstOrDefaultAsync(c => c.Id == id && c.HouseholdId == user.HouseholdId);
+            .Include(c => c.Household)
+            .FirstOrDefaultAsync(c => c.Id == id);
         if (chore is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId)) return NotFound();
 
-        await LoadAvailableLabelsAsync(user.HouseholdId);
+        await LoadAvailableLabelsAsync(chore.HouseholdId);
 
         ChoreId = chore.Id;
         Name = chore.Name;
         Schedule = chore.Schedule;
+        HouseholdName = chore.Household.Name;
         SelectedLabelIds = chore.Labels.Select(l => l.Id).ToList();
         return Page();
     }
@@ -53,19 +59,14 @@ public class EditModel : PageModel
         if (string.IsNullOrWhiteSpace(Name))
         {
             ModelState.AddModelError(nameof(Name), "Name is required.");
-            var currentUser = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-            if (currentUser is not null)
-                await LoadAvailableLabelsAsync(currentUser.HouseholdId);
             return Page();
         }
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
-
         var chore = await _db.Chores
             .Include(c => c.Labels)
-            .FirstOrDefaultAsync(c => c.Id == ChoreId && c.HouseholdId == user.HouseholdId);
+            .FirstOrDefaultAsync(c => c.Id == ChoreId);
         if (chore is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId)) return NotFound();
 
         chore.Name = Name.Trim();
         chore.Schedule = Schedule;
@@ -74,7 +75,7 @@ public class EditModel : PageModel
         if (SelectedLabelIds.Count > 0)
         {
             var labels = await _db.Labels
-                .Where(l => SelectedLabelIds.Contains(l.Id) && l.HouseholdId == user.HouseholdId)
+                .Where(l => SelectedLabelIds.Contains(l.Id) && l.HouseholdId == chore.HouseholdId)
                 .ToListAsync();
             foreach (var label in labels)
                 chore.Labels.Add(label);

@@ -19,6 +19,7 @@ else
         <thead>
             <tr>
                 <th>Name</th>
+                <th>Space</th>
                 <th>Schedule</th>
                 <th></th>
             </tr>
@@ -28,6 +29,7 @@ else
             {
                 <tr>
                     <td>@chore.Name</td>
+                    <td>@chore.Household.Name</td>
                     <td>@chore.Schedule.ToFriendlyLabel()</td>
                     <td>
                         <a asp-page="History" asp-route-id="@chore.Id" class="btn btn-sm btn-outline-secondary">History</a>

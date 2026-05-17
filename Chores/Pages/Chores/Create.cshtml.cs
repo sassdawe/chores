@@ -12,8 +12,13 @@ namespace Chores.Pages.Chores;
 public class CreateModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly HouseholdMembershipService _householdMemberships;
 
-    public CreateModel(AppDbContext db) => _db = db;
+    public CreateModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    {
+        _db = db;
+        _householdMemberships = householdMemberships;
+    }
 
     [BindProperty]
     public string Name { get; set; } = string.Empty;
@@ -24,42 +29,65 @@ public class CreateModel : PageModel
     [BindProperty]
     public List<int> SelectedLabelIds { get; set; } = [];
 
-    public List<Label> AvailableLabels { get; set; } = [];
+    [BindProperty]
+    public int HouseholdId { get; set; }
 
-    public async Task OnGetAsync()
+    public List<HouseholdMembership> Spaces { get; set; } = [];
+    public List<Label> AllAvailableLabels { get; set; } = [];
+    public IReadOnlyList<Label> AvailableLabels =>
+        [.. AllAvailableLabels
+            .Where(label => label.HouseholdId == HouseholdId)
+            .OrderBy(label => label.Name)];
+
+    public async Task OnGetAsync([FromQuery] int? householdId)
     {
+        await LoadSpacesAsync(householdId);
         await LoadAvailableLabelsAsync();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
+        if (user is null) return NotFound();
+
+        var submittedHouseholdId = HouseholdId;
+        await LoadSpacesAsync(submittedHouseholdId);
+        await LoadAvailableLabelsAsync();
+
+        if (Spaces.Count == 0)
+        {
+            ModelState.AddModelError(nameof(HouseholdId), "Create a space before adding chores.");
+            return Page();
+        }
+
+        if (!Spaces.Any(space => space.HouseholdId == submittedHouseholdId))
+        {
+            ModelState.AddModelError(nameof(HouseholdId), "Select a space you can access.");
+            return Page();
+        }
+
         if (!ModelState.IsValid)
         {
-            await LoadAvailableLabelsAsync();
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(Name))
         {
             ModelState.AddModelError(nameof(Name), "Name is required.");
-            await LoadAvailableLabelsAsync();
             return Page();
         }
-
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
 
         var chore = new Chore
         {
             Name = Name.Trim(),
             Schedule = Schedule,
-            HouseholdId = user.HouseholdId
+            HouseholdId = HouseholdId
         };
 
         if (SelectedLabelIds.Count > 0)
         {
             var labels = await _db.Labels
-                .Where(l => SelectedLabelIds.Contains(l.Id) && l.HouseholdId == user.HouseholdId)
+                .Where(l => SelectedLabelIds.Contains(l.Id) && l.HouseholdId == HouseholdId)
                 .ToListAsync();
             foreach (var label in labels)
                 chore.Labels.Add(label);
@@ -70,13 +98,25 @@ public class CreateModel : PageModel
         return RedirectToPage("Index");
     }
 
+    private async Task LoadSpacesAsync(int? householdId = null)
+    {
+        Spaces = await _householdMemberships.GetMembershipsAsync(User.Identity!.Name);
+        HouseholdId = householdId.HasValue && Spaces.Any(space => space.HouseholdId == householdId.Value)
+            ? householdId.Value
+            : Spaces.FirstOrDefault()?.HouseholdId ?? 0;
+    }
+
     private async Task LoadAvailableLabelsAsync()
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return;
+        var accessibleHouseholdIds = Spaces.Select(space => space.HouseholdId).ToList();
+        if (accessibleHouseholdIds.Count == 0)
+        {
+            AllAvailableLabels = [];
+            return;
+        }
 
-        AvailableLabels = await _db.Labels
-            .Where(l => l.HouseholdId == user.HouseholdId)
+        AllAvailableLabels = await _db.Labels
+            .Where(label => accessibleHouseholdIds.Contains(label.HouseholdId))
             .OrderBy(l => l.Name)
             .ToListAsync();
     }

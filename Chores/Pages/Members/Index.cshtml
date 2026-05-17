@@ -4,45 +4,107 @@
     ViewData["Title"] = "Members";
 }
 
-<h2 class="mb-3">Household Members</h2>
+<h2 class="mb-3">Spaces</h2>
 
-@if (Model.Members.Any())
-{
-    <ul class="list-group mb-4" style="max-width:400px;">
-        @foreach (var member in Model.Members)
+<div class="row g-4">
+    <div class="col-md-5">
+        <h5>Your spaces</h5>
+        @if (Model.Spaces.Any())
         {
-            <li class="list-group-item">@member.LoginName</li>
-        }
-    </ul>
-}
-else
-{
-    <p class="text-muted">No members found.</p>
-}
-
-<div style="max-width:400px;">
-    @if (Model.CanInviteMembers)
-    {
-        <h5>Invite a member</h5>
-
-        @if (!string.IsNullOrEmpty(Model.InviteResult))
-        {
-            <div class="alert alert-info py-2">@Model.InviteResult</div>
-        }
-
-        <form method="post" asp-page-handler="Invite">
-            <div class="input-group mb-1">
-                <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
-                <button type="submit" class="btn btn-primary">Invite</button>
+            <div class="list-group mb-3">
+                @foreach (var space in Model.Spaces)
+                {
+                    <a asp-page="/Members/Index"
+                       asp-route-householdId="@space.HouseholdId"
+                       class="list-group-item list-group-item-action @(space.HouseholdId == Model.SelectedHouseholdId ? "active" : string.Empty)">
+                        @space.Household.Name
+                        @if (space.IsOwner)
+                        {
+                            <span class="badge text-bg-secondary ms-1">Owner</span>
+                        }
+                    </a>
+                }
             </div>
-            <span asp-validation-for="InviteLoginName" class="text-danger"></span>
+        }
+        else
+        {
+            <p class="text-muted">No spaces found.</p>
+        }
+
+        <h5>Create a space</h5>
+        <form method="post" asp-page-handler="CreateSpace">
+            <div class="input-group mb-1">
+                <input name="SpaceName" class="form-control" placeholder="Office, garage, online estate…" value="@Model.SpaceName" />
+                <button type="submit" class="btn btn-primary">Create</button>
+            </div>
+            <span asp-validation-for="SpaceName" class="text-danger"></span>
         </form>
-        <p class="text-muted small mt-2 mb-0">
-            Invites expire after 5 days. If a login name does not exist yet, any invite sent before that person registers is discarded and won’t appear in their profile later.
-        </p>
-    }
-    else
-    {
-        <p class="text-muted mb-0">Only the household owner can send invites.</p>
-    }
+    </div>
+
+    <div class="col-md-7">
+        <h5>@(Model.SelectedHouseholdName ?? "Selected space") members</h5>
+
+        @if (Model.CanInviteMembers)
+        {
+            <form method="post" asp-page-handler="RenameSpace" asp-route-householdId="@Model.SelectedHouseholdId" class="mb-4" style="max-width:400px;">
+                <label for="RenameSpaceName" class="form-label">Space display name</label>
+                <div class="input-group mb-1">
+                    <input id="RenameSpaceName"
+                           name="RenameSpaceName"
+                           class="form-control"
+                           value="@(string.IsNullOrWhiteSpace(Model.RenameSpaceName) ? Model.SelectedHouseholdName : Model.RenameSpaceName)" />
+                    <button type="submit" class="btn btn-outline-primary">Rename</button>
+                </div>
+                <span asp-validation-for="RenameSpaceName" class="text-danger"></span>
+            </form>
+        }
+
+        <div style="max-width:400px;">
+            @if (Model.Members.Any())
+            {
+                <ul class="list-group mb-4">
+                    @foreach (var member in Model.Members)
+                    {
+                        <li class="list-group-item">
+                            @member.User.LoginName
+                            @if (member.IsOwner)
+                            {
+                                <span class="badge text-bg-secondary ms-1">Owner</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p class="text-muted">No members found.</p>
+            }
+
+            @if (Model.CanInviteMembers)
+            {
+                <h5>Invite a member</h5>
+
+                @if (!string.IsNullOrEmpty(Model.InviteResult))
+                {
+                    <div class="alert alert-info py-2">@Model.InviteResult</div>
+                }
+
+                <form method="post" asp-page-handler="Invite" asp-route-householdId="@Model.SelectedHouseholdId">
+                    <input type="hidden" name="SelectedHouseholdId" value="@Model.SelectedHouseholdId" />
+                    <div class="input-group mb-1">
+                        <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
+                        <button type="submit" class="btn btn-primary">Invite</button>
+                    </div>
+                    <span asp-validation-for="InviteLoginName" class="text-danger"></span>
+                </form>
+                <p class="text-muted small mt-2 mb-0">
+                    Invites expire after 5 days. If a login name does not exist yet, any invite sent before that person registers is discarded and won’t appear in their profile later.
+                </p>
+            }
+            else
+            {
+                <p class="text-muted mb-0">Only a space owner can send invites.</p>
+            }
+        </div>
+    </div>
 </div>

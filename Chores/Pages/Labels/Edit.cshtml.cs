@@ -12,8 +12,13 @@ namespace Chores.Pages.Labels;
 public class EditModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly HouseholdMembershipService _householdMemberships;
 
-    public EditModel(AppDbContext db) => _db = db;
+    public EditModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    {
+        _db = db;
+        _householdMemberships = householdMemberships;
+    }
 
     [BindProperty]
     public int LabelId { get; set; }
@@ -24,17 +29,20 @@ public class EditModel : PageModel
     [BindProperty]
     public string Color { get; set; } = "#6c757d";
 
+    public string HouseholdName { get; set; } = string.Empty;
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
-
-        var label = await _db.Labels.FirstOrDefaultAsync(l => l.Id == id && l.HouseholdId == user.HouseholdId);
+        var label = await _db.Labels
+            .Include(l => l.Household)
+            .FirstOrDefaultAsync(l => l.Id == id);
         if (label is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, label.HouseholdId)) return NotFound();
 
         LabelId = label.Id;
         Name = label.Name;
         Color = label.Color;
+        HouseholdName = label.Household.Name;
         return Page();
     }
 
@@ -52,11 +60,9 @@ public class EditModel : PageModel
             return Page();
         }
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
-
-        var label = await _db.Labels.FirstOrDefaultAsync(l => l.Id == LabelId && l.HouseholdId == user.HouseholdId);
+        var label = await _db.Labels.FirstOrDefaultAsync(l => l.Id == LabelId);
         if (label is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, label.HouseholdId)) return NotFound();
 
         label.Name = Name.Trim();
         label.Color = normalizedColor;

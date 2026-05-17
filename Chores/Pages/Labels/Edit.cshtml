@@ -6,6 +6,10 @@
 
 <div style="max-width:480px;">
     <h2 class="mb-3">Edit Label</h2>
+    @if (!string.IsNullOrEmpty(Model.HouseholdName))
+    {
+        <p class="text-muted">Space: @Model.HouseholdName</p>
+    }
 
     <form method="post">
         <input type="hidden" name="LabelId" value="@Model.LabelId" />

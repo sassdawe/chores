@@ -11,7 +11,10 @@ using System.Text.Json;
 namespace Chores.Pages.Profile;
 
 [Authorize]
-public class IndexModel(AppDbContext db, HouseholdInvitationService householdInvitations) : PageModel
+public class IndexModel(
+    AppDbContext db,
+    HouseholdInvitationService householdInvitations,
+    HouseholdMembershipService householdMemberships) : PageModel
 {
     private static readonly JsonSerializerOptions ExportJsonOptions = new()
     {
@@ -22,6 +25,10 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
     public AppUser CurrentUser { get; set; } = null!;
     public List<FidoCredential> Passkeys { get; set; } = [];
     public List<HouseholdInvite> PendingInvites { get; set; } = [];
+    public List<HouseholdMembership> Spaces { get; set; } = [];
+    public bool CanAcceptHouseholdInvites { get; set; }
+    [BindProperty]
+    public int? ExportHouseholdId { get; set; }
     [TempData]
     public string? StatusMessage { get; set; }
 
@@ -33,38 +40,39 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
         return Page();
     }
 
-    public async Task<IActionResult> OnGetExportAsync()
+    public async Task<IActionResult> OnGetExportAsync([FromQuery] int? householdId = null)
     {
-        return await ExportAsync();
+        return await ExportAsync(householdId);
     }
 
     public async Task<IActionResult> OnPostExportAsync()
     {
-        return await ExportAsync();
+        return await ExportAsync(ExportHouseholdId);
     }
 
-    private async Task<IActionResult> ExportAsync()
+    private async Task<IActionResult> ExportAsync(int? householdId)
     {
         var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;
-        var user = await db.Users
-            .AsNoTracking()
-            .Include(candidate => candidate.Household)
-            .FirstOrDefaultAsync(candidate => candidate.LoginName == username);
+        var user = await householdMemberships.GetUserAsync(username);
+        var membership = await GetExportMembershipAsync(username, householdId);
 
         if (user is null)
             return RedirectToPage("/Auth/Logout");
 
+        if (membership is null)
+            return await ShowMissingExportSpaceAsync();
+
         var labels = await db.Labels
             .AsNoTracking()
-            .Where(label => label.HouseholdId == user.HouseholdId)
+            .Where(label => label.HouseholdId == membership.HouseholdId)
             .OrderBy(label => label.Name)
             .Select(label => new ExportLabel(label.Id, label.Name, label.Color))
             .ToListAsync();
 
         var chores = await db.Chores
             .AsNoTracking()
-            .Where(chore => chore.HouseholdId == user.HouseholdId)
+            .Where(chore => chore.HouseholdId == membership.HouseholdId)
             .Include(chore => chore.Labels)
             .OrderBy(chore => chore.Name)
             .ToListAsync();
@@ -75,7 +83,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
             1,
             exportedAtUtc,
             user.LoginName,
-            new ExportHousehold(user.HouseholdId, user.Household.Name),
+            new ExportHousehold(membership.HouseholdId, membership.Household.Name),
             [.. labels],
             [.. chores.Select(chore => new ExportChore(
                 chore.Id,
@@ -93,30 +101,32 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
         return File(bytes, "application/json; charset=utf-8", fileName);
     }
 
-    public async Task<IActionResult> OnGetChoreListExportAsync()
+    public async Task<IActionResult> OnGetChoreListExportAsync([FromQuery] int? householdId = null)
     {
-        return await ExportChoreListAsync();
+        return await ExportChoreListAsync(householdId);
     }
 
     public async Task<IActionResult> OnPostChoreListExportAsync()
     {
-        return await ExportChoreListAsync();
+        return await ExportChoreListAsync(ExportHouseholdId);
     }
 
-    private async Task<IActionResult> ExportChoreListAsync()
+    private async Task<IActionResult> ExportChoreListAsync(int? householdId)
     {
         var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;
-        var user = await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.LoginName == username);
+        var user = await householdMemberships.GetUserAsync(username);
+        var membership = await GetExportMembershipAsync(username, householdId);
 
         if (user is null)
             return RedirectToPage("/Auth/Logout");
 
+        if (membership is null)
+            return await ShowMissingExportSpaceAsync();
+
         var chores = await db.Chores
             .AsNoTracking()
-            .Where(chore => chore.HouseholdId == user.HouseholdId)
+            .Where(chore => chore.HouseholdId == membership.HouseholdId)
             .OrderBy(chore => chore.Name)
             .Select(chore => new MinimalExportChore(chore.Name, chore.Schedule.ToString()))
             .ToListAsync();
@@ -190,9 +200,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
         if (!await householdInvitations.AcceptInviteAsync(user, inviteId))
         {
-            StatusMessage = user.IsHouseholdOwner
-                ? "Transfer household ownership before joining another household."
-                : "That invite is no longer available.";
+            StatusMessage = "That invite is no longer available.";
             await LoadAsync();
             return Page();
         }
@@ -228,7 +236,24 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
         CurrentUser = user;
         Passkeys = [.. user.Credentials.OrderBy(c => c.RegDate)];
         PendingInvites = await householdInvitations.GetPendingInvitesAsync(user);
+        CanAcceptHouseholdInvites = await householdInvitations.CanAcceptInvitesAsync(user);
+        Spaces = await householdMemberships.GetMembershipsAsync(username);
+        ExportHouseholdId ??= Spaces.FirstOrDefault()?.HouseholdId;
         return true;
+    }
+
+    private async Task<HouseholdMembership?> GetExportMembershipAsync(string username, int? householdId)
+    {
+        return householdId.HasValue
+            ? await householdMemberships.GetMembershipAsync(username, householdId.Value)
+            : await householdMemberships.GetDefaultMembershipAsync(username);
+    }
+
+    private async Task<IActionResult> ShowMissingExportSpaceAsync()
+    {
+        StatusMessage = "Select a space you can access before exporting.";
+        await LoadAsync();
+        return Page();
     }
 
     private async Task<Dictionary<int, IReadOnlyList<ExportCompletion>>> LoadCompletionHistoryByChoreIdAsync(IReadOnlyList<int> choreIds)
