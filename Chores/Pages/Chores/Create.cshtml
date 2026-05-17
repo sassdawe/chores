@@ -75,7 +75,7 @@
     }
 </div>
 
-<script id="availableLabelsData" type="application/json">@Html.Raw(labelsJson)</script>
+<div id="availableLabelsData" data-labels="@labelsJson" hidden></div>
 
 @section Scripts {
     <script>
@@ -84,14 +84,14 @@
             const labelsContainer = document.getElementById('labelsContainer');
             const noLabelsMessage = document.getElementById('noLabelsMessage');
             const createLabelLink = document.getElementById('createLabelLink');
-            const labelsJson = document.getElementById('availableLabelsData');
+            const labelsData = document.getElementById('availableLabelsData');
             const createLabelBaseUrl = '@Url.Page("/Labels/Create")';
 
-            if (!householdSelect || !labelsContainer || !noLabelsMessage || !createLabelLink || !labelsJson) {
+            if (!householdSelect || !labelsContainer || !noLabelsMessage || !createLabelLink || !labelsData) {
                 return;
             }
 
-            const allLabels = JSON.parse(labelsJson.textContent || '[]');
+            const allLabels = JSON.parse(labelsData.dataset.labels || '[]');
             const selectedLabelIds = new Set(
                 allLabels
                     .filter(label => label.isSelected)
