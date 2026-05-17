@@ -21,21 +21,21 @@
     </script>
 </head>
 <body>
+    @{
+        var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    }
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm bg-body-tertiary mb-3 navbar-shadow">
             <div class="container">
-                <a class="navbar-brand fw-semibold" asp-area="" asp-page="/Index">Chores</a>
+                <a class="navbar-brand fw-semibold" asp-area="" asp-page="/Index">@(isAuthenticated ? "My Chores" : "Chores")</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    @if (User.Identity?.IsAuthenticated == true)
+                    @if (isAuthenticated)
                     {
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Index">Chores</a>
-                        </li>
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-page="/Chores/Index">Manage Chores</a>
                         </li>

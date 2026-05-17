@@ -2,9 +2,11 @@ using Chores.Data;
 using Chores.Models;
 using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Chores.Pages;
 
@@ -29,36 +31,34 @@ public class IndexModel : PageModel
     public List<Label> AllLabels { get; set; } = [];
     public List<HouseholdMembership> Spaces { get; set; } = [];
     public int? ActiveLabelId { get; set; }
-    public int? ActiveHouseholdId { get; set; }
+    public List<int> ActiveHouseholdIds { get; set; } = [];
+    public List<int> EffectiveHouseholdIds { get; set; } = [];
+    public bool IsAllSpacesSelected { get; set; }
+    public bool ShowHouseholdNames => Spaces.Count > 1 && EffectiveHouseholdIds.Count != 1;
+    public string SelectedSpacesSummary { get; set; } = "All spaces";
 
-    public async Task OnGetAsync([FromQuery] int? labelId, [FromQuery] int? householdId)
+    public async Task OnGetAsync([FromQuery] int? labelId, [FromQuery] List<int>? householdIds)
     {
         ActiveLabelId = labelId;
-        ActiveHouseholdId = householdId;
 
         Spaces = await _householdMemberships.GetMembershipsAsync(User.Identity!.Name);
-        var householdIds = Spaces.Select(membership => membership.HouseholdId).ToList();
-        if (householdIds.Count == 0) return;
-
-        if (householdId.HasValue && !householdIds.Contains(householdId.Value))
+        var availableHouseholdIds = Spaces.Select(membership => membership.HouseholdId).ToList();
+        if (availableHouseholdIds.Count == 0)
         {
-            ActiveHouseholdId = null;
-            householdId = null;
+            return;
         }
 
-        var selectedHouseholdIds = householdId.HasValue
-            ? [householdId.Value]
-            : householdIds;
+        SetSpaceSelection(availableHouseholdIds, householdIds ?? []);
 
         AllLabels = await _db.Labels
-            .Where(l => selectedHouseholdIds.Contains(l.HouseholdId))
-            .OrderBy(l => l.Name)
+            .Where(label => EffectiveHouseholdIds.Contains(label.HouseholdId))
+            .OrderBy(label => label.Name)
             .ToListAsync();
 
         var choresQuery = _db.Chores
-            .Include(c => c.Labels)
-            .Include(c => c.Household)
-            .Where(c => selectedHouseholdIds.Contains(c.HouseholdId));
+            .Include(chore => chore.Labels)
+            .Include(chore => chore.Household)
+            .Where(chore => EffectiveHouseholdIds.Contains(chore.HouseholdId));
 
         if (labelId.HasValue)
             choresQuery = choresQuery.Where(c => c.Labels.Any(l => l.Id == labelId.Value));
@@ -83,6 +83,58 @@ public class IndexModel : PageModel
             var adherence = _adherence.Evaluate(c.Schedule, last?.CompletedAtUtc);
             return new ChoreStatus(c, adherence, last?.CompletedAtUtc);
         }).ToList();
+    }
+
+    // Keep dashboard links shareable by omitting redundant space filters when all spaces are selected.
+    public string BuildDashboardPath(int? labelId = null)
+    {
+        var queryBuilder = new QueryBuilder();
+
+        if (labelId.HasValue)
+        {
+            queryBuilder.Add("labelId", labelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var householdId in ActiveHouseholdIds)
+        {
+            queryBuilder.Add("householdIds", householdId.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var queryString = queryBuilder.ToQueryString().Value;
+        return string.IsNullOrEmpty(queryString) ? "/" : $"/{queryString}";
+    }
+
+    private void SetSpaceSelection(IReadOnlyCollection<int> availableHouseholdIds, IReadOnlyCollection<int> requestedHouseholdIds)
+    {
+        ActiveHouseholdIds = requestedHouseholdIds
+            .Where(availableHouseholdIds.Contains)
+            .Distinct()
+            .ToList();
+
+        IsAllSpacesSelected = ActiveHouseholdIds.Count is 0 || ActiveHouseholdIds.Count == availableHouseholdIds.Count;
+        EffectiveHouseholdIds = IsAllSpacesSelected
+            ? [.. availableHouseholdIds]
+            : [.. ActiveHouseholdIds];
+
+        if (IsAllSpacesSelected)
+        {
+            ActiveHouseholdIds = [];
+            SelectedSpacesSummary = "All spaces";
+            return;
+        }
+
+        var selectedNames = Spaces
+            .Where(space => EffectiveHouseholdIds.Contains(space.HouseholdId))
+            .Select(space => space.Household.Name)
+            .ToList();
+
+        SelectedSpacesSummary = selectedNames.Count switch
+        {
+            0 => "All spaces",
+            1 => selectedNames[0],
+            2 => string.Join(", ", selectedNames),
+            _ => $"{selectedNames.Count} spaces selected"
+        };
     }
 
     public record ChoreStatus(Chore Chore, ScheduleAdherence Adherence, DateTime? LastCompletedUtc);
