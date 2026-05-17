@@ -1273,12 +1273,23 @@ function setDocument( node ) {
 	// Regex strategy adopted from Diego Perini
 	assert( function( el ) {
 
-		var input;
+		var input, container, anchor, select, option;
 
-		documentElement.appendChild( el ).innerHTML =
-			"<a id='" + expando + "' href='' disabled='disabled'></a>" +
-			"<select id='" + expando + "-\r\\' disabled='disabled'>" +
-			"<option selected=''></option></select>";
+		container = documentElement.appendChild( el );
+
+		anchor = document.createElement( "a" );
+		anchor.setAttribute( "id", expando );
+		anchor.setAttribute( "href", "" );
+		anchor.setAttribute( "disabled", "disabled" );
+		container.appendChild( anchor );
+
+		select = document.createElement( "select" );
+		select.setAttribute( "id", expando + "-\r\\" );
+		select.setAttribute( "disabled", "disabled" );
+		option = document.createElement( "option" );
+		option.setAttribute( "selected", "" );
+		select.appendChild( option );
+		container.appendChild( select );
 
 		// Support: iOS <=7 - 8 only
 		// Boolean attributes and "value" are not treated correctly in some XML documents
