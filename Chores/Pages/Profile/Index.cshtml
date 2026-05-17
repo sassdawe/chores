@@ -11,8 +11,9 @@
     <div class="alert alert-info py-2" style="max-width:680px">@Model.StatusMessage</div>
 }
 
-<div class="mb-4">
+<div class="mb-4 d-flex gap-2 flex-wrap">
     <a asp-page-handler="Export" class="btn btn-outline-primary">Export household data (JSON)</a>
+    <a asp-page-handler="ChoreListExport" class="btn btn-outline-secondary">Export chore names and schedules (JSON)</a>
 </div>
 
 <h4>Passkeys</h4>

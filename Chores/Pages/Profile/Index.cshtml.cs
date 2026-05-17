@@ -88,6 +88,36 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
         return File(bytes, "application/json; charset=utf-8", fileName);
     }
 
+    public async Task<IActionResult> OnGetChoreListExportAsync()
+    {
+        var username = User.Identity!.Name!;
+        var user = await db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(candidate => candidate.LoginName == username);
+
+        if (user is null)
+            return RedirectToPage("/Auth/Logout");
+
+        var chores = await db.Chores
+            .AsNoTracking()
+            .Where(chore => chore.HouseholdId == user.HouseholdId)
+            .OrderBy(chore => chore.Name)
+            .Select(chore => new MinimalExportChore(chore.Name, chore.Schedule.ToString()))
+            .ToListAsync();
+
+        var export = new MinimalExportPayload(
+            1,
+            DateTime.UtcNow,
+            user.LoginName,
+            [.. chores]);
+
+        var json = JsonSerializer.Serialize(export, ExportJsonOptions);
+        var bytes = Encoding.UTF8.GetBytes(json);
+        var fileName = $"chores-list-export-{DateTime.UtcNow:yyyyMMddHHmmss}.json";
+
+        return File(bytes, "application/json; charset=utf-8", fileName);
+    }
+
     public async Task<IActionResult> OnPostRenameAsync(int credentialId, string? nickname)
     {
         var username = User.Identity!.Name!;
@@ -209,4 +239,12 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
         DateTime CompletedAtUtc,
         int CompletedByUserId,
         string CompletedByLoginName);
+
+    private sealed record MinimalExportPayload(
+        int Version,
+        DateTime ExportedAtUtc,
+        string ExportedByLoginName,
+        IReadOnlyList<MinimalExportChore> Chores);
+
+    private sealed record MinimalExportChore(string Name, string Schedule);
 }
