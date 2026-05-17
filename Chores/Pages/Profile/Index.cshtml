@@ -11,15 +11,47 @@
     <div class="alert alert-info py-2" style="max-width:680px">@Model.StatusMessage</div>
 }
 
-<div class="mb-4 d-flex gap-2 flex-wrap">
-    <form method="post" asp-page-handler="Export" style="display:inline">
-        @Html.AntiForgeryToken()
-        <button type="submit" class="btn btn-outline-primary">Export household data (JSON)</button>
-    </form>
-    <form method="post" asp-page-handler="ChoreListExport" style="display:inline">
-        @Html.AntiForgeryToken()
-        <button type="submit" class="btn btn-outline-secondary">Export chore names and schedules (JSON)</button>
-    </form>
+<div class="mb-4">
+    <h4>Export data</h4>
+    @if (Model.Spaces.Any())
+    {
+        <div class="d-flex gap-2 flex-wrap">
+            <form method="post" asp-page-handler="Export" class="d-flex gap-2 align-items-end flex-wrap">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="FullExportHouseholdId" class="form-label">Space</label>
+                    <select id="FullExportHouseholdId" name="ExportHouseholdId" class="form-select">
+                        @foreach (var space in Model.Spaces)
+                        {
+                            <option value="@space.HouseholdId" selected="@(space.HouseholdId == Model.ExportHouseholdId)">
+                                @space.Household.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-outline-primary">Export household data (JSON)</button>
+            </form>
+            <form method="post" asp-page-handler="ChoreListExport" class="d-flex gap-2 align-items-end flex-wrap">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="ChoreListExportHouseholdId" class="form-label">Space</label>
+                    <select id="ChoreListExportHouseholdId" name="ExportHouseholdId" class="form-select">
+                        @foreach (var space in Model.Spaces)
+                        {
+                            <option value="@space.HouseholdId" selected="@(space.HouseholdId == Model.ExportHouseholdId)">
+                                @space.Household.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-outline-secondary">Export chore names and schedules (JSON)</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted mb-0">Create a space before exporting chore data.</p>
+    }
 </div>
 
 <h4>Passkeys</h4>

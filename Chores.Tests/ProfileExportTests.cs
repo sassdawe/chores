@@ -223,6 +223,76 @@ public class ProfileExportTests
         Assert.StartsWith("chores-list-export-", minimalExport.FileDownloadName);
     }
 
+    [Fact]
+    public async Task OnPostExportHandlers_UseSelectedSpace()
+    {
+        await using var db = CreateDbContext();
+
+        var defaultHousehold = new Household { Name = "Apartment" };
+        var selectedHousehold = new Household { Name = "Workshop" };
+        var owner = new AppUser { LoginName = "alice" };
+        var defaultChore = new Chore
+        {
+            Name = "Vacuum",
+            Schedule = Schedule.Weekly,
+            Household = defaultHousehold
+        };
+        var selectedLabel = new Label
+        {
+            Name = "Tools",
+            Color = "#abcdef",
+            Household = selectedHousehold
+        };
+        var selectedChore = new Chore
+        {
+            Name = "Sweep bench",
+            Schedule = Schedule.Daily,
+            Household = selectedHousehold
+        };
+        selectedChore.Labels.Add(selectedLabel);
+
+        db.Users.Add(owner);
+        db.HouseholdMemberships.AddRange(
+            new HouseholdMembership { User = owner, Household = defaultHousehold, IsOwner = true, JoinedAtUtc = DateTime.UtcNow },
+            new HouseholdMembership { User = owner, Household = selectedHousehold, IsOwner = true, JoinedAtUtc = DateTime.UtcNow });
+        db.Labels.Add(selectedLabel);
+        db.Chores.AddRange(defaultChore, selectedChore);
+        await db.SaveChangesAsync();
+
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
+        {
+            ExportHouseholdId = selectedHousehold.Id,
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.Name, owner.LoginName)
+                    ],
+                    "TestAuth"))
+                }
+            }
+        };
+
+        var fullExport = Assert.IsType<FileContentResult>(await model.OnPostExportAsync());
+        var minimalExport = Assert.IsType<FileContentResult>(await model.OnPostChoreListExportAsync());
+
+        using var fullDocument = JsonDocument.Parse(Encoding.UTF8.GetString(fullExport.FileContents));
+        var fullRoot = fullDocument.RootElement;
+        Assert.Equal("Workshop", fullRoot.GetProperty("household").GetProperty("name").GetString());
+        Assert.Single(fullRoot.GetProperty("labels").EnumerateArray());
+
+        var fullChores = fullRoot.GetProperty("chores");
+        Assert.Single(fullChores.EnumerateArray());
+        Assert.Equal("Sweep bench", fullChores[0].GetProperty("name").GetString());
+
+        using var minimalDocument = JsonDocument.Parse(Encoding.UTF8.GetString(minimalExport.FileContents));
+        var minimalChores = minimalDocument.RootElement.GetProperty("chores");
+        Assert.Single(minimalChores.EnumerateArray());
+        Assert.Equal("Sweep bench", minimalChores[0].GetProperty("name").GetString());
+    }
+
     private static AppDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
