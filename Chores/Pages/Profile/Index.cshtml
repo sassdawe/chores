@@ -11,6 +11,17 @@
     <div class="alert alert-info py-2" style="max-width:680px">@Model.StatusMessage</div>
 }
 
+<div class="mb-4 d-flex gap-2 flex-wrap">
+    <form method="post" asp-page-handler="Export" style="display:inline">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-outline-primary">Export household data (JSON)</button>
+    </form>
+    <form method="post" asp-page-handler="ChoreListExport" style="display:inline">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-outline-secondary">Export chore names and schedules (JSON)</button>
+    </form>
+</div>
+
 <h4>Passkeys</h4>
 <table class="table table-sm" style="max-width:680px">
     <thead>
