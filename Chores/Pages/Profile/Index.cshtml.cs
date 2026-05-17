@@ -56,10 +56,10 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
             .AsNoTracking()
             .Where(chore => chore.HouseholdId == user.HouseholdId)
             .Include(chore => chore.Labels)
-            .Include(chore => chore.CompletionRecords)
-                .ThenInclude(record => record.CompletedByUser)
             .OrderBy(chore => chore.Name)
             .ToListAsync();
+
+        var completionHistoryByChoreId = await LoadCompletionHistoryByChoreIdAsync([.. chores.Select(chore => chore.Id)]);
 
         var export = new ExportPayload(
             1,
@@ -74,13 +74,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
                 [.. chore.Labels
                     .OrderBy(label => label.Name)
                     .Select(label => new ExportLabel(label.Id, label.Name, label.Color))],
-                [.. chore.CompletionRecords
-                    .OrderBy(record => record.CompletedAtUtc)
-                    .Select(record => new ExportCompletion(
-                        record.Id,
-                        record.CompletedAtUtc,
-                        record.CompletedByUserId,
-                        record.CompletedByUser.LoginName))]))]);
+                completionHistoryByChoreId.GetValueOrDefault(chore.Id, [])))]);
 
         var json = JsonSerializer.Serialize(export, ExportJsonOptions);
         var bytes = Encoding.UTF8.GetBytes(json);
@@ -215,6 +209,34 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
         Passkeys = [.. user.Credentials.OrderBy(c => c.RegDate)];
         PendingInvites = await householdInvitations.GetPendingInvitesAsync(user);
         return true;
+    }
+
+    private async Task<Dictionary<int, IReadOnlyList<ExportCompletion>>> LoadCompletionHistoryByChoreIdAsync(IReadOnlyList<int> choreIds)
+    {
+        if (choreIds.Count == 0)
+            return [];
+
+        var completionRows = await db.CompletionRecords
+            .AsNoTracking()
+            .Where(record => choreIds.Contains(record.ChoreId))
+            .OrderBy(record => record.ChoreId)
+            .ThenBy(record => record.CompletedAtUtc)
+            .Select(record => new
+            {
+                record.ChoreId,
+                Completion = new ExportCompletion(
+                    record.Id,
+                    record.CompletedAtUtc,
+                    record.CompletedByUserId,
+                    record.CompletedByUser.LoginName)
+            })
+            .ToListAsync();
+
+        return completionRows
+            .GroupBy(row => row.ChoreId)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<ExportCompletion>)[.. group.Select(row => row.Completion)]);
     }
 
     private sealed record ExportPayload(
