@@ -11,7 +11,10 @@ using System.Text.Json;
 namespace Chores.Pages.Profile;
 
 [Authorize]
-public class IndexModel(AppDbContext db, HouseholdInvitationService householdInvitations) : PageModel
+public class IndexModel(
+    AppDbContext db,
+    HouseholdInvitationService householdInvitations,
+    HouseholdMembershipService householdMemberships) : PageModel
 {
     private static readonly JsonSerializerOptions ExportJsonOptions = new()
     {
@@ -48,24 +51,22 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
     {
         var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;
-        var user = await db.Users
-            .AsNoTracking()
-            .Include(candidate => candidate.Household)
-            .FirstOrDefaultAsync(candidate => candidate.LoginName == username);
+        var user = await householdMemberships.GetUserAsync(username);
+        var membership = await householdMemberships.GetDefaultMembershipAsync(username);
 
-        if (user is null)
+        if (user is null || membership is null)
             return RedirectToPage("/Auth/Logout");
 
         var labels = await db.Labels
             .AsNoTracking()
-            .Where(label => label.HouseholdId == user.HouseholdId)
+            .Where(label => label.HouseholdId == membership.HouseholdId)
             .OrderBy(label => label.Name)
             .Select(label => new ExportLabel(label.Id, label.Name, label.Color))
             .ToListAsync();
 
         var chores = await db.Chores
             .AsNoTracking()
-            .Where(chore => chore.HouseholdId == user.HouseholdId)
+            .Where(chore => chore.HouseholdId == membership.HouseholdId)
             .Include(chore => chore.Labels)
             .OrderBy(chore => chore.Name)
             .ToListAsync();
@@ -76,7 +77,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
             1,
             exportedAtUtc,
             user.LoginName,
-            new ExportHousehold(user.HouseholdId, user.Household.Name),
+            new ExportHousehold(membership.HouseholdId, membership.Household.Name),
             [.. labels],
             [.. chores.Select(chore => new ExportChore(
                 chore.Id,
@@ -108,16 +109,15 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
     {
         var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;
-        var user = await db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.LoginName == username);
+        var user = await householdMemberships.GetUserAsync(username);
+        var membership = await householdMemberships.GetDefaultMembershipAsync(username);
 
-        if (user is null)
+        if (user is null || membership is null)
             return RedirectToPage("/Auth/Logout");
 
         var chores = await db.Chores
             .AsNoTracking()
-            .Where(chore => chore.HouseholdId == user.HouseholdId)
+            .Where(chore => chore.HouseholdId == membership.HouseholdId)
             .OrderBy(chore => chore.Name)
             .Select(chore => new MinimalExportChore(chore.Name, chore.Schedule.ToString()))
             .ToListAsync();

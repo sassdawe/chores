@@ -20,18 +20,8 @@ public class ProfileExportTests
         await using var db = CreateDbContext();
 
         var household = new Household { Name = "Home" };
-        var owner = new AppUser
-        {
-            LoginName = "alice",
-            Household = household,
-            IsHouseholdOwner = true
-        };
-        var member = new AppUser
-        {
-            LoginName = "bob",
-            Household = household,
-            IsHouseholdOwner = false
-        };
+        var owner = new AppUser { LoginName = "alice" };
+        var member = new AppUser { LoginName = "bob" };
         var label = new Label
         {
             Name = "Kitchen",
@@ -54,12 +44,15 @@ public class ProfileExportTests
         };
 
         db.Users.AddRange(owner, member);
+        db.HouseholdMemberships.AddRange(
+            new HouseholdMembership { User = owner, Household = household, IsOwner = true, JoinedAtUtc = DateTime.UtcNow },
+            new HouseholdMembership { User = member, Household = household, IsOwner = false, JoinedAtUtc = DateTime.UtcNow });
         db.Labels.Add(label);
         db.Chores.Add(chore);
         db.CompletionRecords.Add(completion);
         await db.SaveChangesAsync();
 
-        var model = new IndexModel(db, new HouseholdInvitationService(db))
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {
@@ -114,18 +107,8 @@ public class ProfileExportTests
         await using var db = CreateDbContext();
 
         var household = new Household { Name = "Home" };
-        var owner = new AppUser
-        {
-            LoginName = "alice",
-            Household = household,
-            IsHouseholdOwner = true
-        };
-        var member = new AppUser
-        {
-            LoginName = "bob",
-            Household = household,
-            IsHouseholdOwner = false
-        };
+        var owner = new AppUser { LoginName = "alice" };
+        var member = new AppUser { LoginName = "bob" };
         var label = new Label
         {
             Name = "Kitchen",
@@ -141,6 +124,9 @@ public class ProfileExportTests
         chore.Labels.Add(label);
 
         db.Users.AddRange(owner, member);
+        db.HouseholdMemberships.AddRange(
+            new HouseholdMembership { User = owner, Household = household, IsOwner = true, JoinedAtUtc = DateTime.UtcNow },
+            new HouseholdMembership { User = member, Household = household, IsOwner = false, JoinedAtUtc = DateTime.UtcNow });
         db.Labels.Add(label);
         db.Chores.Add(chore);
         db.CompletionRecords.Add(new CompletionRecord
@@ -151,7 +137,7 @@ public class ProfileExportTests
         });
         await db.SaveChangesAsync();
 
-        var model = new IndexModel(db, new HouseholdInvitationService(db))
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {
@@ -196,12 +182,7 @@ public class ProfileExportTests
         await using var db = CreateDbContext();
 
         var household = new Household { Name = "Home" };
-        var owner = new AppUser
-        {
-            LoginName = "alice",
-            Household = household,
-            IsHouseholdOwner = true
-        };
+        var owner = new AppUser { LoginName = "alice" };
         var chore = new Chore
         {
             Name = "Laundry",
@@ -210,10 +191,17 @@ public class ProfileExportTests
         };
 
         db.Users.Add(owner);
+        db.HouseholdMemberships.Add(new HouseholdMembership
+        {
+            User = owner,
+            Household = household,
+            IsOwner = true,
+            JoinedAtUtc = DateTime.UtcNow
+        });
         db.Chores.Add(chore);
         await db.SaveChangesAsync();
 
-        var model = new IndexModel(db, new HouseholdInvitationService(db))
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {

@@ -52,6 +52,11 @@ public class HouseholdMembershipService(AppDbContext db)
                 && membership.HouseholdId == householdId, cancellationToken);
     }
 
+    public async Task<HouseholdMembership?> GetDefaultMembershipAsync(string? loginName, CancellationToken cancellationToken = default)
+    {
+        return (await GetMembershipsAsync(loginName, cancellationToken)).FirstOrDefault();
+    }
+
     public async Task<bool> CanAccessHouseholdAsync(string? loginName, int householdId, CancellationToken cancellationToken = default)
     {
         return await GetMembershipAsync(loginName, householdId, cancellationToken) is not null;
@@ -65,6 +70,6 @@ public class HouseholdMembershipService(AppDbContext db)
 
     public async Task<int?> GetDefaultHouseholdIdAsync(string? loginName, CancellationToken cancellationToken = default)
     {
-        return (await GetMembershipsAsync(loginName, cancellationToken)).FirstOrDefault()?.HouseholdId;
+        return (await GetDefaultMembershipAsync(loginName, cancellationToken))?.HouseholdId;
     }
 }
