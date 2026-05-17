@@ -35,6 +35,16 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
     public async Task<IActionResult> OnGetExportAsync()
     {
+        return await ExportAsync();
+    }
+
+    public async Task<IActionResult> OnPostExportAsync()
+    {
+        return await ExportAsync();
+    }
+
+    private async Task<IActionResult> ExportAsync()
+    {
         var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;
         var user = await db.Users
@@ -84,6 +94,16 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
     }
 
     public async Task<IActionResult> OnGetChoreListExportAsync()
+    {
+        return await ExportChoreListAsync();
+    }
+
+    public async Task<IActionResult> OnPostChoreListExportAsync()
+    {
+        return await ExportChoreListAsync();
+    }
+
+    private async Task<IActionResult> ExportChoreListAsync()
     {
         var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;

@@ -190,6 +190,51 @@ public class ProfileExportTests
         Assert.False(chores[0].TryGetProperty("id", out _));
     }
 
+    [Fact]
+    public async Task OnPostExportHandlers_ReturnJsonFilesForProfileForms()
+    {
+        await using var db = CreateDbContext();
+
+        var household = new Household { Name = "Home" };
+        var owner = new AppUser
+        {
+            LoginName = "alice",
+            Household = household,
+            IsHouseholdOwner = true
+        };
+        var chore = new Chore
+        {
+            Name = "Laundry",
+            Schedule = Schedule.Monthly,
+            Household = household
+        };
+
+        db.Users.Add(owner);
+        db.Chores.Add(chore);
+        await db.SaveChangesAsync();
+
+        var model = new IndexModel(db, new HouseholdInvitationService(db))
+        {
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.Name, owner.LoginName)
+                    ],
+                    "TestAuth"))
+                }
+            }
+        };
+
+        var fullExport = Assert.IsType<FileContentResult>(await model.OnPostExportAsync());
+        var minimalExport = Assert.IsType<FileContentResult>(await model.OnPostChoreListExportAsync());
+
+        Assert.StartsWith("chores-export-", fullExport.FileDownloadName);
+        Assert.StartsWith("chores-list-export-", minimalExport.FileDownloadName);
+    }
+
     private static AppDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
