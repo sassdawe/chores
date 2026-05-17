@@ -1,7 +1,17 @@
 @page
 @model CreateModel
+@using System.Text.Json
 @{
     ViewData["Title"] = "Add Chore";
+    var labelsJson = JsonSerializer.Serialize(Model.AllAvailableLabels.Select(label => new
+    {
+        id = label.Id,
+        householdId = label.HouseholdId,
+        name = label.Name,
+        color = label.Color,
+        textColor = label.GetAccessibleTextColor(),
+        isSelected = Model.SelectedLabelIds.Contains(label.Id)
+    }));
 }
 
 <div style="max-width:480px;">
@@ -35,25 +45,98 @@
         </div>
         <div class="mb-3">
             <label class="form-label">Labels</label>
-            @if (Model.AvailableLabels.Any())
-            {
-                <div class="d-flex flex-wrap gap-2">
-                    @foreach (var label in Model.AvailableLabels)
-                    {
-                        <label class="d-flex align-items-center gap-1" style="cursor:pointer;">
-                            <input type="checkbox" name="SelectedLabelIds" value="@label.Id"
-                                   checked="@(Model.SelectedLabelIds.Contains(label.Id) ? "checked" : null)" />
-                            <span class="badge" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
-                        </label>
-                    }
-                </div>
-            }
-            else
-            {
-                <p class="text-muted small">No labels yet. <a asp-page="/Labels/Create" asp-route-householdId="@Model.HouseholdId">Create one</a></p>
-            }
+            <div id="labelsContainer" class="d-flex flex-wrap gap-2">
+                @foreach (var label in Model.AvailableLabels)
+                {
+                    <label class="d-flex align-items-center gap-1" style="cursor:pointer;">
+                        <input type="checkbox" name="SelectedLabelIds" value="@label.Id"
+                               checked="@(Model.SelectedLabelIds.Contains(label.Id) ? "checked" : null)" />
+                        <span class="badge" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
+                    </label>
+                }
+            </div>
+            <p id="noLabelsMessage" class="text-muted small @(Model.AvailableLabels.Any() ? "d-none" : null)">
+                No labels yet. <a id="createLabelLink" asp-page="/Labels/Create" asp-route-householdId="@Model.HouseholdId">Create one</a>
+            </p>
         </div>
         <button type="submit" class="btn btn-primary me-2">Save</button>
         <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
     </form>
 </div>
+
+<script id="availableLabelsData" type="application/json">@Html.Raw(labelsJson)</script>
+
+@section Scripts {
+    <script>
+        (function () {
+            const householdSelect = document.getElementById('HouseholdId');
+            const labelsContainer = document.getElementById('labelsContainer');
+            const noLabelsMessage = document.getElementById('noLabelsMessage');
+            const createLabelLink = document.getElementById('createLabelLink');
+            const labelsJson = document.getElementById('availableLabelsData');
+            const createLabelBaseUrl = '@Url.Page("/Labels/Create")';
+
+            if (!householdSelect || !labelsContainer || !noLabelsMessage || !createLabelLink || !labelsJson) {
+                return;
+            }
+
+            const allLabels = JSON.parse(labelsJson.textContent || '[]');
+            const selectedLabelIds = new Set(
+                allLabels
+                    .filter(label => label.isSelected)
+                    .map(label => String(label.id))
+            );
+
+            function syncSelectedLabels() {
+                labelsContainer.querySelectorAll('input[name="SelectedLabelIds"]').forEach((checkbox) => {
+                    if (checkbox.checked) {
+                        selectedLabelIds.add(checkbox.value);
+                    } else {
+                        selectedLabelIds.delete(checkbox.value);
+                    }
+                });
+            }
+
+            function createLabelOption(label) {
+                const wrapper = document.createElement('label');
+                wrapper.className = 'd-flex align-items-center gap-1';
+                wrapper.style.cursor = 'pointer';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'SelectedLabelIds';
+                checkbox.value = String(label.id);
+                checkbox.checked = selectedLabelIds.has(String(label.id));
+
+                const badge = document.createElement('span');
+                badge.className = 'badge';
+                badge.style.backgroundColor = label.color;
+                badge.style.color = label.textColor;
+                badge.textContent = label.name;
+
+                wrapper.appendChild(checkbox);
+                wrapper.appendChild(badge);
+                return wrapper;
+            }
+
+            function renderLabels() {
+                syncSelectedLabels();
+
+                const householdId = Number(householdSelect.value);
+                const labelsForHousehold = allLabels.filter(label => label.householdId === householdId);
+
+                labelsContainer.replaceChildren();
+                labelsForHousehold.forEach((label) => {
+                    labelsContainer.appendChild(createLabelOption(label));
+                });
+
+                noLabelsMessage.classList.toggle('d-none', labelsForHousehold.length > 0);
+                createLabelLink.href = `${createLabelBaseUrl}?householdId=${encodeURIComponent(householdSelect.value)}`;
+            }
+
+            labelsContainer.addEventListener('change', syncSelectedLabels);
+            householdSelect.addEventListener('change', renderLabels);
+            renderLabels();
+        })();
+    </script>
+}

@@ -33,7 +33,11 @@ public class CreateModel : PageModel
     public int HouseholdId { get; set; }
 
     public List<HouseholdMembership> Spaces { get; set; } = [];
-    public List<Label> AvailableLabels { get; set; } = [];
+    public List<Label> AllAvailableLabels { get; set; } = [];
+    public IReadOnlyList<Label> AvailableLabels =>
+        [.. AllAvailableLabels
+            .Where(label => label.HouseholdId == HouseholdId)
+            .OrderBy(label => label.Name)];
 
     public async Task OnGetAsync([FromQuery] int? householdId)
     {
@@ -93,9 +97,15 @@ public class CreateModel : PageModel
 
     private async Task LoadAvailableLabelsAsync()
     {
-        if (HouseholdId == 0) return;
-        AvailableLabels = await _db.Labels
-            .Where(l => l.HouseholdId == HouseholdId)
+        var accessibleHouseholdIds = Spaces.Select(space => space.HouseholdId).ToList();
+        if (accessibleHouseholdIds.Count == 0)
+        {
+            AllAvailableLabels = [];
+            return;
+        }
+
+        AllAvailableLabels = await _db.Labels
+            .Where(label => accessibleHouseholdIds.Contains(label.HouseholdId))
             .OrderBy(l => l.Name)
             .ToListAsync();
     }
