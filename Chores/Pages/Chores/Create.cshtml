@@ -17,51 +17,62 @@
 <div style="max-width:480px;">
     <h2 class="mb-3">Add Chore</h2>
 
-    <form method="post">
-        <div class="mb-3">
-            <label for="HouseholdId" class="form-label">Space</label>
-            <select id="HouseholdId" name="HouseholdId" class="form-select">
-                @foreach (var space in Model.Spaces)
-                {
-                    <option value="@space.HouseholdId" selected="@(space.HouseholdId == Model.HouseholdId ? "selected" : null)">
-                        @space.Household.Name
-                    </option>
-                }
-            </select>
+    @if (!Model.Spaces.Any())
+    {
+        <div class="alert alert-info">
+            Create a space before adding chores.
+            <a asp-page="/Members/Index">Manage spaces</a>
         </div>
-        <div class="mb-3">
-            <label for="Name" class="form-label">Chore name</label>
-            <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
-            <span asp-validation-for="Name" class="text-danger"></span>
-        </div>
-        <div class="mb-3">
-            <label for="Schedule" class="form-label">Schedule</label>
-            <select id="Schedule" name="Schedule" class="form-select">
-                @foreach (Schedule s in Enum.GetValues(typeof(Schedule)))
-                {
-                    <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToFriendlyLabel()</option>
-                }
-            </select>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Labels</label>
-            <div id="labelsContainer" class="d-flex flex-wrap gap-2">
-                @foreach (var label in Model.AvailableLabels)
-                {
-                    <label class="d-flex align-items-center gap-1" style="cursor:pointer;">
-                        <input type="checkbox" name="SelectedLabelIds" value="@label.Id"
-                               checked="@(Model.SelectedLabelIds.Contains(label.Id) ? "checked" : null)" />
-                        <span class="badge" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
-                    </label>
-                }
+    }
+    else
+    {
+        <form method="post">
+            <div class="mb-3">
+                <label for="HouseholdId" class="form-label">Space</label>
+                <select id="HouseholdId" name="HouseholdId" class="form-select">
+                    @foreach (var space in Model.Spaces)
+                    {
+                        <option value="@space.HouseholdId" selected="@(space.HouseholdId == Model.HouseholdId ? "selected" : null)">
+                            @space.Household.Name
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="HouseholdId" class="text-danger"></span>
             </div>
-            <p id="noLabelsMessage" class="text-muted small @(Model.AvailableLabels.Any() ? "d-none" : null)">
-                No labels yet. <a id="createLabelLink" asp-page="/Labels/Create" asp-route-householdId="@Model.HouseholdId">Create one</a>
-            </p>
-        </div>
-        <button type="submit" class="btn btn-primary me-2">Save</button>
-        <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
-    </form>
+            <div class="mb-3">
+                <label for="Name" class="form-label">Chore name</label>
+                <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label for="Schedule" class="form-label">Schedule</label>
+                <select id="Schedule" name="Schedule" class="form-select">
+                    @foreach (Schedule s in Enum.GetValues(typeof(Schedule)))
+                    {
+                        <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToFriendlyLabel()</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Labels</label>
+                <div id="labelsContainer" class="d-flex flex-wrap gap-2">
+                    @foreach (var label in Model.AvailableLabels)
+                    {
+                        <label class="d-flex align-items-center gap-1" style="cursor:pointer;">
+                            <input type="checkbox" name="SelectedLabelIds" value="@label.Id"
+                                   checked="@(Model.SelectedLabelIds.Contains(label.Id) ? "checked" : null)" />
+                            <span class="badge" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
+                        </label>
+                    }
+                </div>
+                <p id="noLabelsMessage" class="text-muted small @(Model.AvailableLabels.Any() ? "d-none" : null)">
+                    No labels yet. <a id="createLabelLink" asp-page="/Labels/Create" asp-route-householdId="@Model.HouseholdId">Create one</a>
+                </p>
+            </div>
+            <button type="submit" class="btn btn-primary me-2">Save</button>
+            <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    }
 </div>
 
 <script id="availableLabelsData" type="application/json">@Html.Raw(labelsJson)</script>

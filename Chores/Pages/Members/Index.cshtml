@@ -59,50 +59,50 @@
             </form>
         }
 
-@if (Model.Members.Any())
-{
-    <ul class="list-group mb-4" style="max-width:400px;">
-        @foreach (var member in Model.Members)
+        @if (Model.Members.Any())
         {
-            <li class="list-group-item">
-                @member.User.LoginName
-                @if (member.IsOwner)
+            <ul class="list-group mb-4" style="max-width:400px;">
+                @foreach (var member in Model.Members)
                 {
-                    <span class="badge text-bg-secondary ms-1">Owner</span>
+                    <li class="list-group-item">
+                        @member.User.LoginName
+                        @if (member.IsOwner)
+                        {
+                            <span class="badge text-bg-secondary ms-1">Owner</span>
+                        }
+                    </li>
                 }
-            </li>
+            </ul>
         }
-    </ul>
-}
-else
-{
-    <p class="text-muted">No members found.</p>
-}
-
-    @if (Model.CanInviteMembers)
-    {
-        <h5>Invite a member</h5>
-
-        @if (!string.IsNullOrEmpty(Model.InviteResult))
+        else
         {
-            <div class="alert alert-info py-2">@Model.InviteResult</div>
+            <p class="text-muted">No members found.</p>
         }
 
-        <form method="post" asp-page-handler="Invite" asp-route-householdId="@Model.SelectedHouseholdId">
-            <input type="hidden" name="SelectedHouseholdId" value="@Model.SelectedHouseholdId" />
-            <div class="input-group mb-1">
-                <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
-                <button type="submit" class="btn btn-primary">Invite</button>
-            </div>
-            <span asp-validation-for="InviteLoginName" class="text-danger"></span>
-        </form>
-        <p class="text-muted small mt-2 mb-0">
-            Invites expire after 5 days. If a login name does not exist yet, any invite sent before that person registers is discarded and won’t appear in their profile later.
-        </p>
-    }
-    else
-    {
-        <p class="text-muted mb-0">Only a space owner can send invites.</p>
-    }
+        @if (Model.CanInviteMembers)
+        {
+            <h5>Invite a member</h5>
+
+            @if (!string.IsNullOrEmpty(Model.InviteResult))
+            {
+                <div class="alert alert-info py-2">@Model.InviteResult</div>
+            }
+
+            <form method="post" asp-page-handler="Invite" asp-route-householdId="@Model.SelectedHouseholdId">
+                <input type="hidden" name="SelectedHouseholdId" value="@Model.SelectedHouseholdId" />
+                <div class="input-group mb-1">
+                    <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
+                    <button type="submit" class="btn btn-primary">Invite</button>
+                </div>
+                <span asp-validation-for="InviteLoginName" class="text-danger"></span>
+            </form>
+            <p class="text-muted small mt-2 mb-0">
+                Invites expire after 5 days. If a login name does not exist yet, any invite sent before that person registers is discarded and won’t appear in their profile later.
+            </p>
+        }
+        else
+        {
+            <p class="text-muted mb-0">Only a space owner can send invites.</p>
+        }
     </div>
 </div>

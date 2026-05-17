@@ -47,24 +47,35 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
+        if (user is null) return NotFound();
+
+        var submittedHouseholdId = HouseholdId;
+        await LoadSpacesAsync(submittedHouseholdId);
+        await LoadAvailableLabelsAsync();
+
+        if (Spaces.Count == 0)
+        {
+            ModelState.AddModelError(nameof(HouseholdId), "Create a space before adding chores.");
+            return Page();
+        }
+
+        if (!Spaces.Any(space => space.HouseholdId == submittedHouseholdId))
+        {
+            ModelState.AddModelError(nameof(HouseholdId), "Select a space you can access.");
+            return Page();
+        }
+
         if (!ModelState.IsValid)
         {
-            await LoadSpacesAsync(HouseholdId);
-            await LoadAvailableLabelsAsync();
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(Name))
         {
             ModelState.AddModelError(nameof(Name), "Name is required.");
-            await LoadSpacesAsync(HouseholdId);
-            await LoadAvailableLabelsAsync();
             return Page();
         }
-
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
-        if (!await _householdMemberships.CanAccessHouseholdAsync(user.LoginName, HouseholdId)) return NotFound();
 
         var chore = new Chore
         {

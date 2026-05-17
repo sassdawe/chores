@@ -49,24 +49,25 @@ public class IndexModel : PageModel
         await LoadAsync(householdId);
     }
 
-    public async Task<IActionResult> OnPostInviteAsync()
+    public async Task<IActionResult> OnPostInviteAsync([FromQuery] int? householdId)
     {
-        await LoadAsync(SelectedHouseholdId);
+        var targetHouseholdId = householdId ?? SelectedHouseholdId;
 
         var currentUser = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
         if (currentUser is null) return NotFound();
-        if (SelectedHouseholdId is null) return NotFound();
-        if (!await _householdMemberships.IsOwnerAsync(currentUser.LoginName, SelectedHouseholdId.Value)) return Forbid();
+        if (targetHouseholdId is null) return NotFound();
+        if (!await _householdMemberships.IsOwnerAsync(currentUser.LoginName, targetHouseholdId.Value)) return Forbid();
 
         if (!LoginNameValidator.TryNormalize(InviteLoginName, out var normalizedLoginName))
         {
             ModelState.AddModelError(nameof(InviteLoginName), "Enter a valid login name.");
+            await LoadAsync(targetHouseholdId);
             return Page();
         }
 
-        await _householdInvitations.CreateInviteAsync(currentUser, SelectedHouseholdId.Value, normalizedLoginName);
+        await _householdInvitations.CreateInviteAsync(currentUser, targetHouseholdId.Value, normalizedLoginName);
         InviteResult = "Invite sent.";
-        return RedirectToPage(new { householdId = SelectedHouseholdId });
+        return RedirectToPage(new { householdId = targetHouseholdId });
     }
 
     public async Task<IActionResult> OnPostCreateSpaceAsync()
@@ -95,22 +96,23 @@ public class IndexModel : PageModel
         return RedirectToPage(new { householdId = household.Id });
     }
 
-    public async Task<IActionResult> OnPostRenameSpaceAsync()
+    public async Task<IActionResult> OnPostRenameSpaceAsync([FromQuery] int? householdId)
     {
-        await LoadAsync(SelectedHouseholdId);
+        var targetHouseholdId = householdId ?? SelectedHouseholdId;
 
         var currentUser = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
         if (currentUser is null) return NotFound();
-        if (SelectedHouseholdId is null) return NotFound();
-        if (!await _householdMemberships.IsOwnerAsync(currentUser.LoginName, SelectedHouseholdId.Value)) return Forbid();
+        if (targetHouseholdId is null) return NotFound();
+        if (!await _householdMemberships.IsOwnerAsync(currentUser.LoginName, targetHouseholdId.Value)) return Forbid();
 
         if (string.IsNullOrWhiteSpace(RenameSpaceName))
         {
             ModelState.AddModelError(nameof(RenameSpaceName), "Name is required.");
+            await LoadAsync(targetHouseholdId);
             return Page();
         }
 
-        var household = await _db.Households.FirstOrDefaultAsync(candidate => candidate.Id == SelectedHouseholdId.Value);
+        var household = await _db.Households.FirstOrDefaultAsync(candidate => candidate.Id == targetHouseholdId.Value);
         if (household is null) return NotFound();
 
         household.Name = RenameSpaceName.Trim();
@@ -125,6 +127,10 @@ public class IndexModel : PageModel
         Spaces = await _householdMemberships.GetMembershipsAsync(username);
         if (Spaces.Count == 0)
         {
+            Members = [];
+            SelectedHouseholdId = null;
+            SelectedHouseholdName = null;
+            CanInviteMembers = false;
             return;
         }
 

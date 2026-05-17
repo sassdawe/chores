@@ -101,7 +101,8 @@ public class IndexModel : PageModel
         }
 
         var queryString = queryBuilder.ToQueryString().Value;
-        return string.IsNullOrEmpty(queryString) ? "/" : $"/{queryString}";
+        var pagePath = $"{Request.PathBase}/";
+        return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 
     public string BuildCreateChorePath()
@@ -113,8 +114,9 @@ public class IndexModel : PageModel
             queryBuilder.Add("householdId", EffectiveHouseholdIds[0].ToString(CultureInfo.InvariantCulture));
         }
 
+        var pagePath = $"{Request.PathBase}/Chores/Create";
         var queryString = queryBuilder.ToQueryString().Value;
-        return string.IsNullOrEmpty(queryString) ? "/Chores/Create" : $"/Chores/Create{queryString}";
+        return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 
     private void SetSpaceSelection(IReadOnlyCollection<int> availableHouseholdIds, IReadOnlyCollection<int> requestedHouseholdIds)
