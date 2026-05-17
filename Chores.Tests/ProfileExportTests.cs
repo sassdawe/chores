@@ -82,9 +82,11 @@ public class ProfileExportTests
 
         using var document = JsonDocument.Parse(Encoding.UTF8.GetString(fileResult.FileContents));
         var root = document.RootElement;
+        var exportedAtUtc = root.GetProperty("exportedAtUtc").GetDateTime();
 
         Assert.Equal("alice", root.GetProperty("exportedByLoginName").GetString());
         Assert.Equal("Home", root.GetProperty("household").GetProperty("name").GetString());
+        Assert.Equal($"chores-export-{exportedAtUtc:yyyyMMddHHmmss}.json", fileResult.FileDownloadName);
 
         var labels = root.GetProperty("labels");
         Assert.Single(labels.EnumerateArray());
@@ -172,10 +174,12 @@ public class ProfileExportTests
 
         using var document = JsonDocument.Parse(Encoding.UTF8.GetString(fileResult.FileContents));
         var root = document.RootElement;
+        var exportedAtUtc = root.GetProperty("exportedAtUtc").GetDateTime();
 
         Assert.Equal("alice", root.GetProperty("exportedByLoginName").GetString());
         Assert.False(root.TryGetProperty("household", out _));
         Assert.False(root.TryGetProperty("labels", out _));
+        Assert.Equal($"chores-list-export-{exportedAtUtc:yyyyMMddHHmmss}.json", fileResult.FileDownloadName);
 
         var chores = root.GetProperty("chores");
         Assert.Single(chores.EnumerateArray());

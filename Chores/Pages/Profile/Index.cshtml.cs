@@ -35,6 +35,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
     public async Task<IActionResult> OnGetExportAsync()
     {
+        var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;
         var user = await db.Users
             .AsNoTracking()
@@ -62,7 +63,7 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
         var export = new ExportPayload(
             1,
-            DateTime.UtcNow,
+            exportedAtUtc,
             user.LoginName,
             new ExportHousehold(user.HouseholdId, user.Household.Name),
             [.. labels],
@@ -83,13 +84,14 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
         var json = JsonSerializer.Serialize(export, ExportJsonOptions);
         var bytes = Encoding.UTF8.GetBytes(json);
-        var fileName = $"chores-export-{DateTime.UtcNow:yyyyMMddHHmmss}.json";
+        var fileName = $"chores-export-{exportedAtUtc:yyyyMMddHHmmss}.json";
 
         return File(bytes, "application/json; charset=utf-8", fileName);
     }
 
     public async Task<IActionResult> OnGetChoreListExportAsync()
     {
+        var exportedAtUtc = DateTime.UtcNow;
         var username = User.Identity!.Name!;
         var user = await db.Users
             .AsNoTracking()
@@ -107,13 +109,13 @@ public class IndexModel(AppDbContext db, HouseholdInvitationService householdInv
 
         var export = new MinimalExportPayload(
             1,
-            DateTime.UtcNow,
+            exportedAtUtc,
             user.LoginName,
             [.. chores]);
 
         var json = JsonSerializer.Serialize(export, ExportJsonOptions);
         var bytes = Encoding.UTF8.GetBytes(json);
-        var fileName = $"chores-list-export-{DateTime.UtcNow:yyyyMMddHHmmss}.json";
+        var fileName = $"chores-list-export-{exportedAtUtc:yyyyMMddHHmmss}.json";
 
         return File(bytes, "application/json; charset=utf-8", fileName);
     }
