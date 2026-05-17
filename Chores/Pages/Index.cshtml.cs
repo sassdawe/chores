@@ -121,19 +121,13 @@ public class IndexModel : PageModel
 
     private void SetSpaceSelection(IReadOnlyCollection<int> availableHouseholdIds, IReadOnlyCollection<int> requestedHouseholdIds)
     {
-        ActiveHouseholdIds = requestedHouseholdIds
-            .Where(availableHouseholdIds.Contains)
-            .Distinct()
-            .ToList();
-
-        IsAllSpacesSelected = ActiveHouseholdIds.Count is 0 || ActiveHouseholdIds.Count == availableHouseholdIds.Count;
-        EffectiveHouseholdIds = IsAllSpacesSelected
-            ? [.. availableHouseholdIds]
-            : [.. ActiveHouseholdIds];
+        var selection = BuildSpaceSelection(availableHouseholdIds, requestedHouseholdIds);
+        IsAllSpacesSelected = selection.IsAllSpacesSelected;
+        EffectiveHouseholdIds = selection.EffectiveHouseholdIds;
+        ActiveHouseholdIds = selection.ActiveHouseholdIds;
 
         if (IsAllSpacesSelected)
         {
-            ActiveHouseholdIds = [];
             SelectedSpacesSummary = "All spaces";
             return;
         }
@@ -151,6 +145,36 @@ public class IndexModel : PageModel
             _ => $"{selectedNames.Count} spaces selected"
         };
     }
+
+    private static SpaceSelection BuildSpaceSelection(
+        IReadOnlyCollection<int> availableHouseholdIds,
+        IReadOnlyCollection<int> requestedHouseholdIds)
+    {
+        var requestedAccessibleHouseholdIds = requestedHouseholdIds
+            .Where(availableHouseholdIds.Contains)
+            .Distinct()
+            .ToList();
+
+        var isAllSpacesSelected = requestedAccessibleHouseholdIds.Count is 0
+            || requestedAccessibleHouseholdIds.Count == availableHouseholdIds.Count;
+
+        List<int> effectiveHouseholdIds = isAllSpacesSelected
+            ? [.. availableHouseholdIds]
+            : [.. requestedAccessibleHouseholdIds];
+
+        // An empty active list means "all spaces" and keeps dashboard links free of
+        // redundant householdIds filters.
+        List<int> activeHouseholdIds = isAllSpacesSelected
+            ? []
+            : [.. requestedAccessibleHouseholdIds];
+
+        return new SpaceSelection(isAllSpacesSelected, effectiveHouseholdIds, activeHouseholdIds);
+    }
+
+    private record SpaceSelection(
+        bool IsAllSpacesSelected,
+        List<int> EffectiveHouseholdIds,
+        List<int> ActiveHouseholdIds);
 
     public record ChoreStatus(Chore Chore, ScheduleAdherence Adherence, DateTime? LastCompletedUtc);
 }
