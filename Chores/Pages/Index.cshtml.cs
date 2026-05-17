@@ -34,7 +34,7 @@ public class IndexModel : PageModel
     public List<int> ActiveHouseholdIds { get; set; } = [];
     public List<int> EffectiveHouseholdIds { get; set; } = [];
     public bool IsAllSpacesSelected { get; set; }
-    public bool ShowHouseholdNames => Spaces.Count > 1 && EffectiveHouseholdIds.Count != 1;
+    public bool ShowHouseholdNames => Spaces.Count > 1 && (IsAllSpacesSelected || ActiveHouseholdIds.Count > 1);
     public string SelectedSpacesSummary { get; set; } = "All spaces";
 
     public async Task OnGetAsync([FromQuery] int? labelId, [FromQuery] List<int>? householdIds)
