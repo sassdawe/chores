@@ -20,53 +20,62 @@
     .chore-row .chore-labels { justify-self: center; }
     .chore-row > .badge { justify-self: end; }
     .label-pill { padding:2px 8px; border-radius:10px; font-size:0.75rem; color:#fff; font-weight:500; }
-    .dashboard-filter-bar { display:flex; align-items:center; margin-bottom:1rem; }
+    .dashboard-filter-bar { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:1rem; flex-wrap:wrap; }
     .dashboard-space-toggle { display:inline-flex; align-items:center; gap:.5rem; max-width:min(100%, 28rem); }
     .dashboard-space-summary { display:inline-block; max-width:18rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .dashboard-space-menu { min-width:min(22rem, calc(100vw - 2rem)); }
     .dashboard-space-options { display:grid; gap:.5rem; max-height:16rem; overflow:auto; }
     .dashboard-space-actions { display:flex; justify-content:flex-end; gap:.5rem; }
+    .dashboard-filter-actions { display:flex; align-items:center; gap:.75rem; }
 </style>
 
-@if (Model.Spaces.Count > 1)
-{
-    <form method="get" class="dashboard-filter-bar">
-        @if (Model.ActiveLabelId.HasValue)
-        {
-            <input type="hidden" name="labelId" value="@Model.ActiveLabelId" />
-        }
-        <div class="dropdown" data-bs-auto-close="outside">
-            <button class="btn btn-outline-secondary dropdown-toggle dashboard-space-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <span class="text-body-secondary">Spaces:</span>
-                <span class="dashboard-space-summary fw-semibold">@Model.SelectedSpacesSummary</span>
-            </button>
-            <div class="dropdown-menu p-3 dashboard-space-menu">
-                <fieldset class="mb-0">
-                    <legend class="visually-hidden">Filter chores by space</legend>
-                    <div class="dashboard-space-options">
-                        @foreach (var space in Model.Spaces)
-                        {
-                            var checkboxId = $"space-{space.HouseholdId}";
-                            <div class="form-check">
-                                <input id="@checkboxId"
-                                       class="form-check-input"
-                                       type="checkbox"
-                                       name="householdIds"
-                                       value="@space.HouseholdId"
-                                       checked="@(Model.EffectiveHouseholdIds.Contains(space.HouseholdId) ? "checked" : null)" />
-                                <label class="form-check-label" for="@checkboxId">@space.Household.Name</label>
-                            </div>
-                        }
+<div class="dashboard-filter-bar">
+    @if (Model.Spaces.Count > 1)
+    {
+        <form method="get" class="dashboard-filter-actions">
+            @if (Model.ActiveLabelId.HasValue)
+            {
+                <input type="hidden" name="labelId" value="@Model.ActiveLabelId" />
+            }
+            <div class="dropdown" data-bs-auto-close="outside">
+                <button class="btn btn-outline-secondary dropdown-toggle dashboard-space-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="text-body-secondary">Spaces:</span>
+                    <span class="dashboard-space-summary fw-semibold">@Model.SelectedSpacesSummary</span>
+                </button>
+                <div class="dropdown-menu p-3 dashboard-space-menu">
+                    <fieldset class="mb-0">
+                        <legend class="visually-hidden">Filter chores by space</legend>
+                        <div class="dashboard-space-options">
+                            @foreach (var space in Model.Spaces)
+                            {
+                                var checkboxId = $"space-{space.HouseholdId}";
+                                <div class="form-check">
+                                    <input id="@checkboxId"
+                                           class="form-check-input"
+                                           type="checkbox"
+                                           name="householdIds"
+                                           value="@space.HouseholdId"
+                                           checked="@(Model.EffectiveHouseholdIds.Contains(space.HouseholdId) ? "checked" : null)" />
+                                    <label class="form-check-label" for="@checkboxId">@space.Household.Name</label>
+                                </div>
+                            }
+                        </div>
+                    </fieldset>
+                    <div class="dashboard-space-actions mt-3">
+                        <a class="btn btn-sm btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId)">All spaces</a>
+                        <button type="submit" class="btn btn-sm btn-primary">Apply</button>
                     </div>
-                </fieldset>
-                <div class="dashboard-space-actions mt-3">
-                    <a class="btn btn-sm btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId)">All spaces</a>
-                    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
                 </div>
             </div>
-        </div>
-    </form>
-}
+        </form>
+    }
+    else
+    {
+        <span></span>
+    }
+
+    <a class="btn btn-primary" href="@Model.BuildCreateChorePath()">+ Add Chore</a>
+</div>
 
 @if (Model.AllLabels.Any())
 {

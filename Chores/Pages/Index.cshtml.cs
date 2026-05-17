@@ -104,6 +104,19 @@ public class IndexModel : PageModel
         return string.IsNullOrEmpty(queryString) ? "/" : $"/{queryString}";
     }
 
+    public string BuildCreateChorePath()
+    {
+        var queryBuilder = new QueryBuilder();
+
+        if (EffectiveHouseholdIds.Count == 1)
+        {
+            queryBuilder.Add("householdId", EffectiveHouseholdIds[0].ToString(CultureInfo.InvariantCulture));
+        }
+
+        var queryString = queryBuilder.ToQueryString().Value;
+        return string.IsNullOrEmpty(queryString) ? "/Chores/Create" : $"/Chores/Create{queryString}";
+    }
+
     private void SetSpaceSelection(IReadOnlyCollection<int> availableHouseholdIds, IReadOnlyCollection<int> requestedHouseholdIds)
     {
         ActiveHouseholdIds = requestedHouseholdIds
