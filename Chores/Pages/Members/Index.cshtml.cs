@@ -11,6 +11,8 @@ namespace Chores.Pages.Members;
 [Authorize]
 public class IndexModel : PageModel
 {
+    public const int MaxSpaceNameLength = 100;
+
     private readonly AppDbContext _db;
     private readonly HouseholdInvitationService _householdInvitations;
     private readonly HouseholdMembershipService _householdMemberships;
@@ -72,17 +74,17 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostCreateSpaceAsync()
     {
-        if (string.IsNullOrWhiteSpace(SpaceName))
+        var currentUser = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
+        if (currentUser is null) return NotFound();
+
+        var validation = await ValidateSpaceNameAsync(SpaceName, nameof(SpaceName), currentUser.Id, excludedHouseholdId: null);
+        if (!validation.IsValid)
         {
-            ModelState.AddModelError(nameof(SpaceName), "Name is required.");
             await LoadAsync(SelectedHouseholdId);
             return Page();
         }
 
-        var currentUser = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (currentUser is null) return NotFound();
-
-        var household = new Household { Name = SpaceName.Trim() };
+        var household = new Household { Name = validation.NormalizedName };
         _db.Households.Add(household);
         _db.HouseholdMemberships.Add(new HouseholdMembership
         {
@@ -105,17 +107,17 @@ public class IndexModel : PageModel
         if (targetHouseholdId is null) return NotFound();
         if (!await _householdMemberships.IsOwnerAsync(currentUser.LoginName, targetHouseholdId.Value)) return Forbid();
 
-        if (string.IsNullOrWhiteSpace(RenameSpaceName))
+        var household = await _db.Households.FirstOrDefaultAsync(candidate => candidate.Id == targetHouseholdId.Value);
+        if (household is null) return NotFound();
+
+        var validation = await ValidateSpaceNameAsync(RenameSpaceName, nameof(RenameSpaceName), currentUser.Id, household.Id);
+        if (!validation.IsValid)
         {
-            ModelState.AddModelError(nameof(RenameSpaceName), "Name is required.");
             await LoadAsync(targetHouseholdId);
             return Page();
         }
 
-        var household = await _db.Households.FirstOrDefaultAsync(candidate => candidate.Id == targetHouseholdId.Value);
-        if (household is null) return NotFound();
-
-        household.Name = RenameSpaceName.Trim();
+        household.Name = validation.NormalizedName;
         await _db.SaveChangesAsync();
 
         return RedirectToPage(new { householdId = household.Id });
@@ -148,5 +150,57 @@ public class IndexModel : PageModel
             .Where(membership => membership.HouseholdId == selectedMembership.HouseholdId)
             .OrderBy(membership => membership.User.LoginName)
             .ToListAsync();
+    }
+
+    private async Task<(bool IsValid, string NormalizedName)> ValidateSpaceNameAsync(
+        string submittedName,
+        string propertyName,
+        int userId,
+        int? excludedHouseholdId)
+    {
+        var normalizedName = NormalizeSpaceName(submittedName);
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            ModelState.AddModelError(propertyName, "Name is required.");
+            return (false, normalizedName);
+        }
+
+        if (normalizedName.Any(char.IsControl))
+        {
+            ModelState.AddModelError(propertyName, "Name can't contain control characters.");
+            return (false, normalizedName);
+        }
+
+        if (normalizedName.Length > MaxSpaceNameLength)
+        {
+            ModelState.AddModelError(propertyName, $"Name must be {MaxSpaceNameLength} characters or fewer.");
+            return (false, normalizedName);
+        }
+
+        if (await HasSpaceNamedAsync(userId, normalizedName, excludedHouseholdId))
+        {
+            ModelState.AddModelError(propertyName, "You already have a space with that name.");
+            return (false, normalizedName);
+        }
+
+        return (true, normalizedName);
+    }
+
+    private async Task<bool> HasSpaceNamedAsync(int userId, string normalizedName, int? excludedHouseholdId)
+    {
+        var householdNames = await _db.HouseholdMemberships
+            .AsNoTracking()
+            .Include(membership => membership.Household)
+            .Where(membership => membership.UserId == userId
+                && (!excludedHouseholdId.HasValue || membership.HouseholdId != excludedHouseholdId.Value))
+            .Select(membership => membership.Household.Name)
+            .ToListAsync();
+
+        return householdNames.Any(name => string.Equals(name, normalizedName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeSpaceName(string value)
+    {
+        return string.Join(' ', value.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
 }
