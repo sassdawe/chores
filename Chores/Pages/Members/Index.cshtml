@@ -32,7 +32,7 @@
         }
 
         <h5>Create a space</h5>
-        <form method="post" asp-page-handler="CreateSpace" asp-route-householdId="@Model.SelectedHouseholdId">
+        <form method="post" asp-page-handler="CreateSpace">
             <div class="input-group mb-1">
                 <input name="SpaceName" class="form-control" placeholder="Office, garage, online estate…" value="@Model.SpaceName" />
                 <button type="submit" class="btn btn-primary">Create</button>
