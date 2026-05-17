@@ -686,7 +686,26 @@ $.extend( $.validator, {
 		},
 
 		clean: function( selector ) {
-			return $( selector )[ 0 ];
+			if ( selector == null ) {
+				return selector;
+			}
+
+			// DOM element
+			if ( selector.nodeType ) {
+				return selector;
+			}
+
+			// jQuery object or array-like collection
+			if ( selector.jquery || ( typeof selector.length === "number" && typeof selector !== "string" ) ) {
+				return selector[ 0 ];
+			}
+
+			// String selector: resolve as CSS selector in current form context only
+			if ( typeof selector === "string" ) {
+				return $.find( selector, this.currentForm )[ 0 ];
+			}
+
+			return undefined;
 		},
 
 		errors: function() {
@@ -1083,6 +1102,9 @@ $.extend( $.validator, {
 			}
 
 			// Always apply ignore filter
+			if ( typeof element === "string" ) {
+				return $( this.currentForm ).find( element ).not( this.settings.ignore )[ 0 ];
+			}
 			return $( element ).not( this.settings.ignore )[ 0 ];
 		},
 
