@@ -3,6 +3,18 @@
 Chores is a self-hosted chore tracker for homes, offices, garages, online estates, and other named spaces built with ASP.NET Core Razor Pages.  
 It records when chores are completed and shows whether each chore is on time or overdue based on its schedule.
 
+The app is designed to be a **tracker**, so it make it super easy to record when a chore is completed without making any disturbance. 
+
+> [!NOTE]
+> Chores MVP stands for: Most Valuable Partner in doing the chores. 
+
+## Design rules:
+
+1. I will not have my service end up on HIBP!
+2. No password no problem.
+3. No PII stored means no PII to leak.
+4. Should run on cloud as good as in a homelab.
+
 ## Features
 
 - Track chores with fixed schedules:
@@ -12,6 +24,10 @@ It records when chores are completed and shows whether each chore is on time or 
   - Weekly
   - Bi-weekly
   - Monthly
+  - Quarterly
+  - Every 6 months
+  - Yearly
+  - Every 2 years
 - Mark chores as complete with timestamped history
 - View overdue/on-time status on the dashboard for all spaces or a selected space
 - Create and rename multiple named spaces and manage chores, members, and labels for each one
@@ -26,6 +42,10 @@ It records when chores are completed and shows whether each chore is on time or 
 - Entity Framework Core
 - SQLite
 - xUnit
+
+## Demo instance
+
+You can access a demo instance of the [Chores App here](https://chores-mvp.azurewebsites.net/Auth/Login).
 
 ## Run Locally
 
