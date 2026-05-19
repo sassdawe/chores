@@ -73,3 +73,5 @@ See:
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
+![Visitors](https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Fsassdawe%2Fchores&countColor=%23263759)
