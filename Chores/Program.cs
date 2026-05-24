@@ -27,7 +27,7 @@ builder.Services.AddScoped<HouseholdMembershipService>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opt =>
 {
-    opt.IdleTimeout = TimeSpan.FromDays(7);
+    opt.IdleTimeout = TimeSpan.FromMinutes(5);
     opt.Cookie.HttpOnly = true;
     opt.Cookie.IsEssential = true;
 });
