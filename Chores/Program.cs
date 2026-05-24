@@ -27,7 +27,7 @@ builder.Services.AddScoped<HouseholdMembershipService>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opt =>
 {
-    opt.IdleTimeout = TimeSpan.FromMinutes(5);
+    opt.IdleTimeout = TimeSpan.FromDays(7);
     opt.Cookie.HttpOnly = true;
     opt.Cookie.IsEssential = true;
 });
@@ -48,6 +48,8 @@ builder.Services.AddAuthentication("Cookies")
     {
         opt.LoginPath = "/Auth/Login";
         opt.LogoutPath = "/Auth/Logout";
+        opt.ExpireTimeSpan = TimeSpan.FromDays(7);
+        opt.SlidingExpiration = true;
     });
 
 var app = builder.Build();
@@ -182,7 +184,15 @@ app.MapPost("/api/auth/attestation/result", async (HttpContext httpContext) =>
 
     var claims = new[] { new Claim(ClaimTypes.Name, username) };
     var identity = new ClaimsIdentity(claims, "Cookies");
-    await httpContext.SignInAsync("Cookies", new ClaimsPrincipal(identity));
+    await httpContext.SignInAsync(
+        "Cookies",
+        new ClaimsPrincipal(identity),
+        new AuthenticationProperties
+        {
+            IsPersistent = true,
+            AllowRefresh = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+        });
 
     return Results.Ok(new { status = "ok" });
 });
@@ -263,7 +273,15 @@ app.MapPost("/api/auth/assertion/result", async (HttpContext httpContext) =>
     var loginName = storedCred.User.LoginName;
     var claims = new[] { new Claim(ClaimTypes.Name, loginName) };
     var identity = new ClaimsIdentity(claims, "Cookies");
-    await httpContext.SignInAsync("Cookies", new ClaimsPrincipal(identity));
+    await httpContext.SignInAsync(
+        "Cookies",
+        new ClaimsPrincipal(identity),
+        new AuthenticationProperties
+        {
+            IsPersistent = true,
+            AllowRefresh = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+        });
 
     return Results.Ok(new { status = "ok" });
 });
