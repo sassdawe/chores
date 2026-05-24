@@ -128,6 +128,7 @@
                         localStorage.removeItem(rememberedLoginNameKey);
                     }
                 } catch {
+                    // Ignore storage failures and continue sign-in without persistence.
                 }
 
                 window.location.href = '/';
