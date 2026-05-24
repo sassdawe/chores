@@ -51,7 +51,11 @@
     const loginNameInput = document.getElementById('loginName');
     const rememberLoginNameCheckbox = document.getElementById('rememberLoginName');
 
-    const rememberedLoginName = localStorage.getItem(rememberedLoginNameKey);
+    let rememberedLoginName = null;
+    try {
+        rememberedLoginName = localStorage.getItem(rememberedLoginNameKey);
+    } catch {
+    }
     if (rememberedLoginName) {
         loginNameInput.value = rememberedLoginName;
         rememberLoginNameCheckbox.checked = true;
