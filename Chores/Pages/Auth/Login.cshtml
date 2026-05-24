@@ -117,10 +117,14 @@
             if (!resResult.ok) throw new Error('Authentication failed on server.');
             const data = await resResult.json();
             if (data.status === 'ok') {
-                if (rememberLoginNameCheckbox.checked) {
-                    localStorage.setItem(rememberedLoginNameKey, username);
-                } else {
-                    localStorage.removeItem(rememberedLoginNameKey);
+                try {
+                    if (rememberLoginNameCheckbox.checked) {
+                        localStorage.setItem(rememberedLoginNameKey, username);
+                    } else {
+                        localStorage.removeItem(rememberedLoginNameKey);
+                    }
+                } catch {
+                    // Ignore storage failures and continue sign-in without persistence.
                 }
 
                 window.location.href = '/';
