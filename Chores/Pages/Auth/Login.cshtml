@@ -8,8 +8,15 @@
     <div class="col-md-5">
         <div class="card shadow-sm p-4">
             <h1 class="h4 mb-3">Sign in</h1>
-            <input type="text" id="loginName" placeholder="Login name" autocomplete="username webauthn" class="form-control mb-2" />
-            <button id="loginBtn" class="btn btn-primary">Sign in</button>
+            <form id="loginForm" novalidate>
+                <label for="loginName" class="form-label">Login name</label>
+                <input type="text" id="loginName" name="username" placeholder="Login name" autocomplete="username webauthn" autocapitalize="none" class="form-control mb-2" />
+                <div class="form-check mb-3">
+                    <input type="checkbox" id="rememberLoginName" class="form-check-input" />
+                    <label for="rememberLoginName" class="form-check-label">Remember me on this device</label>
+                </div>
+                <button id="loginBtn" type="submit" class="btn btn-primary">Sign in</button>
+            </form>
             <p class="text-muted mt-2 small">
                 We use your login name only to start passkey sign-in. No password or email is collected here.
                 <a href="/Privacy">Read the privacy policy</a>.
@@ -21,6 +28,8 @@
 </div>
 
 <script>
+    const rememberedLoginNameKey = 'chores.lastLoginName';
+
     function base64urlToArrayBuffer(base64url) {
         const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
         const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=');
@@ -38,11 +47,28 @@
         return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     }
 
-    document.getElementById('loginBtn').addEventListener('click', async () => {
+    const loginForm = document.getElementById('loginForm');
+    const loginNameInput = document.getElementById('loginName');
+    const rememberLoginNameCheckbox = document.getElementById('rememberLoginName');
+
+    let rememberedLoginName = null;
+    try {
+        rememberedLoginName = localStorage.getItem(rememberedLoginNameKey);
+    } catch {
+        // Ignore storage failures; remembered login name is optional.
+    }
+    if (rememberedLoginName) {
+        loginNameInput.value = rememberedLoginName;
+        rememberLoginNameCheckbox.checked = true;
+    }
+
+    loginForm.addEventListener('submit', async event => {
+        event.preventDefault();
+
         const msg = document.getElementById('message');
         msg.style.display = 'none';
 
-        const username = document.getElementById('loginName').value.trim();
+        const username = loginNameInput.value.trim();
         if (!username) {
             msg.textContent = 'Please enter your login name.';
             msg.style.display = 'block';
@@ -96,6 +122,16 @@
             if (!resResult.ok) throw new Error('Authentication failed on server.');
             const data = await resResult.json();
             if (data.status === 'ok') {
+                try {
+                    if (rememberLoginNameCheckbox.checked) {
+                        localStorage.setItem(rememberedLoginNameKey, username);
+                    } else {
+                        localStorage.removeItem(rememberedLoginNameKey);
+                    }
+                } catch {
+                    // Ignore storage failures and continue sign-in without persistence.
+                }
+
                 window.location.href = '/';
             } else {
                 throw new Error('Unexpected server response.');
