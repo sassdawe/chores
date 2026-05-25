@@ -39,7 +39,7 @@
             }
             @if (Model.HasCustomSortMode)
             {
-                <input type="hidden" name="sort" value="@Model.ActiveSortMode.ToString().ToLowerInvariant().Replace("nextdue", "due")" />
+                <input type="hidden" name="sort" value="@Model.ActiveSortQueryValue" />
             }
             <div class="dropdown" data-bs-auto-close="outside">
                 <button class="btn btn-outline-secondary dropdown-toggle dashboard-space-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

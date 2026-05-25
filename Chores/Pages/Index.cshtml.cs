@@ -52,6 +52,7 @@ public class IndexModel : PageModel
         _ => "Alphabet"
     };
     public bool HasCustomSortMode => ActiveSortMode != DashboardSortMode.Alphabet;
+    public string ActiveSortQueryValue => ToQueryValue(ActiveSortMode);
 
     public async Task OnGetAsync([FromQuery] int? labelId, [FromQuery] List<int>? householdIds, [FromQuery] string? sort)
     {
