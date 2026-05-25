@@ -55,6 +55,7 @@
     try {
         rememberedLoginName = localStorage.getItem(rememberedLoginNameKey);
     } catch {
+        // Ignore storage failures; remembered login name is optional.
     }
     if (rememberedLoginName) {
         loginNameInput.value = rememberedLoginName;
