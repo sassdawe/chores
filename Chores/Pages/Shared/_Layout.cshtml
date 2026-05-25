@@ -27,8 +27,12 @@
         var request = Context.Request;
         var query = request.Query;
         var isAuthenticated = User.Identity?.IsAuthenticated == true;
-        var activeLabelId = query["labelId"].ToString();
-        var activeSort = query["sort"].ToString();
+        var activeLabelId = query.TryGetValue("labelId", out var requestedLabelIds)
+            ? requestedLabelIds.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty
+            : string.Empty;
+        var activeSort = query.TryGetValue("sort", out var requestedSorts)
+            ? requestedSorts.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty
+            : string.Empty;
         var householdIds = query.TryGetValue("householdIds", out var requestedHouseholdIds)
             ? requestedHouseholdIds
             : StringValues.Empty;
