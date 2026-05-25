@@ -37,6 +37,10 @@
             {
                 <input type="hidden" name="labelId" value="@Model.ActiveLabelId" />
             }
+            @if (Model.HasCustomSortMode)
+            {
+                <input type="hidden" name="sort" value="@Model.ActiveSortMode.ToString().ToLowerInvariant().Replace("nextdue", "due")" />
+            }
             <div class="dropdown" data-bs-auto-close="outside">
                 <button class="btn btn-outline-secondary dropdown-toggle dashboard-space-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="text-body-secondary">Spaces:</span>
@@ -74,7 +78,12 @@
         <span></span>
     }
 
-    <a class="btn btn-primary" href="@Model.BuildCreateChorePath()">+ Add Chore</a>
+    <div class="dashboard-filter-actions">
+        <a class="btn btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId, Model.GetNextSortMode())" title="Switch sorting mode">
+            Sort: @Model.ActiveSortModeLabel
+        </a>
+        <a class="btn btn-primary" href="@Model.BuildCreateChorePath()">+ Add Chore</a>
+    </div>
 </div>
 
 @if (Model.AllLabels.Any())

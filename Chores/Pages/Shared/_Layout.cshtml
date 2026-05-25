@@ -28,6 +28,7 @@
         var query = request.Query;
         var isAuthenticated = User.Identity?.IsAuthenticated == true;
         var activeLabelId = query["labelId"].ToString();
+        var activeSort = query["sort"].ToString();
         var householdIds = query.TryGetValue("householdIds", out var requestedHouseholdIds)
             ? requestedHouseholdIds
             : StringValues.Empty;
@@ -40,6 +41,11 @@
         if (!string.IsNullOrWhiteSpace(activeLabelId))
         {
             dashboardQuery.Add("labelId", activeLabelId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(activeSort))
+        {
+            dashboardQuery.Add("sort", activeSort);
         }
 
         foreach (var householdId in activeHouseholdIds)

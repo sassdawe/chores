@@ -33,6 +33,9 @@ public class CompleteModel : PageModel
     [BindProperty(SupportsGet = true)]
     public List<int> HouseholdIds { get; set; } = [];
 
+    [BindProperty(SupportsGet = true)]
+    public string? Sort { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id);
@@ -76,6 +79,11 @@ public class CompleteModel : PageModel
         if (LabelId.HasValue)
         {
             queryBuilder.Add("labelId", LabelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        if (!string.IsNullOrWhiteSpace(Sort))
+        {
+            queryBuilder.Add("sort", Sort);
         }
 
         foreach (var householdId in HouseholdIds)

@@ -13,6 +13,10 @@
         {
             <input type="hidden" asp-for="LabelId" />
         }
+        @if (!string.IsNullOrWhiteSpace(Model.Sort))
+        {
+            <input type="hidden" asp-for="Sort" />
+        }
         @foreach (var householdId in Model.HouseholdIds)
         {
             <input type="hidden" name="HouseholdIds" value="@householdId" />
