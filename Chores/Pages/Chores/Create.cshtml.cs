@@ -106,16 +106,26 @@ public class CreateModel : PageModel
 
     public string BuildManageChoresPath()
     {
+        var pagePath = $"{Request.PathBase}/Chores";
+        return BuildPathWithOptionalQueryParameters(
+            pagePath,
+            ("labelId", LabelId.HasValue ? LabelId.Value.ToString(CultureInfo.InvariantCulture) : null));
+    }
+
+    private static string BuildPathWithOptionalQueryParameters(string basePath, params (string Key, string? Value)[] parameters)
+    {
         var queryBuilder = new QueryBuilder();
 
-        if (LabelId.HasValue)
+        foreach (var (key, value) in parameters)
         {
-            queryBuilder.Add("labelId", LabelId.Value.ToString(CultureInfo.InvariantCulture));
+            if (!string.IsNullOrEmpty(value))
+            {
+                queryBuilder.Add(key, value);
+            }
         }
 
         var queryString = queryBuilder.ToQueryString().Value;
-        var pagePath = $"{Request.PathBase}/Chores";
-        return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
+        return string.IsNullOrEmpty(queryString) ? basePath : $"{basePath}{queryString}";
     }
 
     private void ApplyInitialLabelSelection(bool householdIdSpecified)
