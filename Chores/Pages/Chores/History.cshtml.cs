@@ -2,9 +2,11 @@ using Chores.Data;
 using Chores.Models;
 using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Chores.Pages.Chores;
 
@@ -18,6 +20,9 @@ public class HistoryModel(
 {
     public Chore Chore { get; set; } = null!;
     public List<CompletionEntry> Entries { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public int? LabelId { get; set; }
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -50,5 +55,19 @@ public class HistoryModel(
             .ToList();
 
         return Page();
+    }
+
+    public string BuildManageChoresPath()
+    {
+        var queryBuilder = new QueryBuilder();
+
+        if (LabelId.HasValue)
+        {
+            queryBuilder.Add("labelId", LabelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var queryString = queryBuilder.ToQueryString().Value;
+        var pagePath = $"{Request.PathBase}/Chores";
+        return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 }

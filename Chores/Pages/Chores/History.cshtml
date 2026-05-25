@@ -6,7 +6,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">@Model.Chore.Name</h2>
-    <a asp-page="Index" class="btn btn-outline-secondary btn-sm">← Back to chores</a>
+    <a href="@Model.BuildManageChoresPath()" class="btn btn-outline-secondary btn-sm">← Back to chores</a>
 </div>
 
 <p class="text-muted">Schedule: @Model.Chore.Schedule.ToFriendlyLabel()</p>

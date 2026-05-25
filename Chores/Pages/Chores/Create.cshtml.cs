@@ -2,9 +2,11 @@ using Chores.Data;
 using Chores.Models;
 using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Chores.Pages.Chores;
 
@@ -32,6 +34,9 @@ public class CreateModel : PageModel
     [BindProperty]
     public int HouseholdId { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public int? LabelId { get; set; }
+
     public List<HouseholdMembership> Spaces { get; set; } = [];
     public List<Label> AllAvailableLabels { get; set; } = [];
     public IReadOnlyList<Label> AvailableLabels =>
@@ -43,6 +48,7 @@ public class CreateModel : PageModel
     {
         await LoadSpacesAsync(householdId);
         await LoadAvailableLabelsAsync();
+        ApplyInitialLabelSelection(householdId.HasValue);
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -95,7 +101,55 @@ public class CreateModel : PageModel
 
         _db.Chores.Add(chore);
         await _db.SaveChangesAsync();
-        return RedirectToPage("Index");
+        return LocalRedirect(BuildManageChoresPath());
+    }
+
+    public string BuildManageChoresPath()
+    {
+        var pagePath = $"{Request.PathBase}/Chores";
+        return BuildPathWithOptionalQueryParameters(
+            pagePath,
+            ("labelId", LabelId.HasValue ? LabelId.Value.ToString(CultureInfo.InvariantCulture) : null));
+    }
+
+    private static string BuildPathWithOptionalQueryParameters(string basePath, params (string Key, string? Value)[] parameters)
+    {
+        var queryBuilder = new QueryBuilder();
+
+        foreach (var (key, value) in parameters)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                queryBuilder.Add(key, value);
+            }
+        }
+
+        var queryString = queryBuilder.ToQueryString().Value;
+        return string.IsNullOrEmpty(queryString) ? basePath : $"{basePath}{queryString}";
+    }
+
+    private void ApplyInitialLabelSelection(bool householdIdSpecified)
+    {
+        if (!LabelId.HasValue)
+        {
+            return;
+        }
+
+        var activeLabel = AllAvailableLabels.FirstOrDefault(label => label.Id == LabelId.Value);
+        if (activeLabel is null)
+        {
+            return;
+        }
+
+        if (!householdIdSpecified)
+        {
+            HouseholdId = activeLabel.HouseholdId;
+        }
+
+        if (HouseholdId == activeLabel.HouseholdId && !SelectedLabelIds.Contains(activeLabel.Id))
+        {
+            SelectedLabelIds.Add(activeLabel.Id);
+        }
     }
 
     private async Task LoadSpacesAsync(int? householdId = null)

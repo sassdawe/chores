@@ -2,9 +2,11 @@ using Chores.Data;
 using Chores.Models;
 using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Chores.Pages.Chores;
 
@@ -31,6 +33,9 @@ public class EditModel : PageModel
 
     [BindProperty]
     public List<int> SelectedLabelIds { get; set; } = [];
+
+    [BindProperty(SupportsGet = true)]
+    public int? LabelId { get; set; }
 
     public List<Label> AvailableLabels { get; set; } = [];
     public string HouseholdName { get; set; } = string.Empty;
@@ -82,7 +87,21 @@ public class EditModel : PageModel
         }
 
         await _db.SaveChangesAsync();
-        return RedirectToPage("Index");
+        return LocalRedirect(BuildManageChoresPath());
+    }
+
+    public string BuildManageChoresPath()
+    {
+        var queryBuilder = new QueryBuilder();
+
+        if (LabelId.HasValue)
+        {
+            queryBuilder.Add("labelId", LabelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var queryString = queryBuilder.ToQueryString().Value;
+        var pagePath = $"{Request.PathBase}/Chores";
+        return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 
     private async Task LoadAvailableLabelsAsync(int householdId)
