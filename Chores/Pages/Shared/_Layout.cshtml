@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Http.Extensions
+@using Microsoft.Extensions.Primitives
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -22,12 +24,42 @@
 </head>
 <body>
     @{
+        var request = Context.Request;
+        var query = request.Query;
         var isAuthenticated = User.Identity?.IsAuthenticated == true;
+        var activeLabelId = query["labelId"].ToString();
+        var householdIds = query.TryGetValue("householdIds", out var requestedHouseholdIds)
+            ? requestedHouseholdIds
+            : StringValues.Empty;
+        var activeHouseholdIds = householdIds
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!)
+            .ToArray();
+
+        var dashboardQuery = new QueryBuilder();
+        if (!string.IsNullOrWhiteSpace(activeLabelId))
+        {
+            dashboardQuery.Add("labelId", activeLabelId);
+        }
+
+        foreach (var householdId in activeHouseholdIds)
+        {
+            dashboardQuery.Add("householdIds", householdId);
+        }
+
+        var manageChoresQuery = new QueryBuilder();
+        if (!string.IsNullOrWhiteSpace(activeLabelId))
+        {
+            manageChoresQuery.Add("labelId", activeLabelId);
+        }
+
+        var dashboardHref = $"{request.PathBase}/{dashboardQuery.ToQueryString().Value}";
+        var manageChoresHref = $"{request.PathBase}/Chores{manageChoresQuery.ToQueryString().Value}";
     }
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm bg-body-tertiary mb-3 navbar-shadow">
             <div class="container">
-                <a class="navbar-brand fw-semibold" asp-area="" asp-page="/Index">@(isAuthenticated ? "My Chores" : "Chores")</a>
+                <a class="navbar-brand fw-semibold" href="@dashboardHref">@(isAuthenticated ? "My Chores" : "Chores")</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -37,7 +69,7 @@
                     {
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Chores/Index">Manage Chores</a>
+                            <a class="nav-link" href="@manageChoresHref">Manage Chores</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" asp-area="" asp-page="/Members/Index">Spaces</a>

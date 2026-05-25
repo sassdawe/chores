@@ -27,6 +27,10 @@
     else
     {
         <form method="post">
+            @if (Model.LabelId.HasValue)
+            {
+                <input type="hidden" asp-for="LabelId" />
+            }
             <div class="mb-3">
                 <label for="HouseholdId" class="form-label">Space</label>
                 <select id="HouseholdId" name="HouseholdId" class="form-select">
@@ -70,7 +74,7 @@
                 </p>
             </div>
             <button type="submit" class="btn btn-primary me-2">Save</button>
-            <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+            <a href="@Model.BuildManageChoresPath()" class="btn btn-outline-secondary">Cancel</a>
         </form>
     }
 </div>

@@ -105,7 +105,7 @@ else
         @foreach (var cs in Model.ChoreStatuses)
         {
             <li>
-                <a class="chore-row" href="/Chores/Complete?id=@cs.Chore.Id">
+                <a class="chore-row" href="@Model.BuildCompletePath(cs.Chore.Id)">
                     <span class="chore-name">
                         @cs.Chore.Name
                         @if (Model.ShowHouseholdNames)

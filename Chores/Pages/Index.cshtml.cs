@@ -119,6 +119,26 @@ public class IndexModel : PageModel
         return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 
+    public string BuildCompletePath(int choreId)
+    {
+        var queryBuilder = new QueryBuilder
+        {
+            { "id", choreId.ToString(CultureInfo.InvariantCulture) }
+        };
+
+        if (ActiveLabelId.HasValue)
+        {
+            queryBuilder.Add("labelId", ActiveLabelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var householdId in ActiveHouseholdIds)
+        {
+            queryBuilder.Add("householdIds", householdId.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return $"{Request.PathBase}/Chores/Complete{queryBuilder.ToQueryString().Value}";
+    }
+
     private void SetSpaceSelection(IReadOnlyCollection<int> availableHouseholdIds, IReadOnlyCollection<int> requestedHouseholdIds)
     {
         var selection = BuildSpaceSelection(availableHouseholdIds, requestedHouseholdIds);

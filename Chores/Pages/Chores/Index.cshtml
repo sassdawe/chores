@@ -4,10 +4,33 @@
     ViewData["Title"] = "Manage Chores";
 }
 
+<style>
+    .filter-chip { text-decoration: none; border: 1px solid var(--bs-border-color); }
+    .filter-chip-active { background-color: var(--bs-primary) !important; border-color: var(--bs-primary) !important; color: #fff !important; }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Manage Chores</h2>
-    <a asp-page="Create" class="btn btn-primary">+ Add Chore</a>
+    <a href="@Model.BuildCreatePath()" class="btn btn-primary">+ Add Chore</a>
 </div>
+
+@if (Model.AllLabels.Any())
+{
+    <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+        <a href="@Model.BuildManageChoresPath()"
+           class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">All</a>
+        @foreach (var label in Model.AllLabels)
+        {
+            var isActive = Model.ActiveLabelId == label.Id;
+            var textColor = label.GetAccessibleTextColor();
+            <a href="@Model.BuildManageChoresPath(label.Id)"
+               class="badge filter-chip"
+               style="background-color:@label.Color; border-color:@label.Color; opacity:@(isActive ? "1" : "0.75"); color:@textColor;">
+                @label.Name
+            </a>
+        }
+    </div>
+}
 
 @if (!Model.Chores.Any())
 {
@@ -32,8 +55,8 @@ else
                     <td>@chore.Household.Name</td>
                     <td>@chore.Schedule.ToFriendlyLabel()</td>
                     <td>
-                        <a asp-page="History" asp-route-id="@chore.Id" class="btn btn-sm btn-outline-secondary">History</a>
-                        <a asp-page="Edit" asp-route-id="@chore.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="@Model.BuildHistoryPath(chore.Id)" class="btn btn-sm btn-outline-secondary">History</a>
+                        <a href="@Model.BuildEditPath(chore.Id)" class="btn btn-sm btn-outline-secondary">Edit</a>
                     </td>
                 </tr>
             }

@@ -12,6 +12,10 @@
     }
 
     <form method="post">
+        @if (Model.LabelId.HasValue)
+        {
+            <input type="hidden" asp-for="LabelId" />
+        }
         <input type="hidden" name="ChoreId" value="@Model.ChoreId" />
         <div class="mb-3">
             <label for="Name" class="form-label">Chore name</label>
@@ -48,6 +52,6 @@
             }
         </div>
         <button type="submit" class="btn btn-primary me-2">Save</button>
-        <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        <a href="@Model.BuildManageChoresPath()" class="btn btn-outline-secondary">Cancel</a>
     </form>
 </div>

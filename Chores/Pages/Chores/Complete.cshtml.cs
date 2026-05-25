@@ -2,9 +2,11 @@ using Chores.Data;
 using Chores.Models;
 using Chores.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Chores.Pages.Chores;
 
@@ -24,6 +26,12 @@ public class CompleteModel : PageModel
 
     [BindProperty]
     public DateTime CompletedAt { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int? LabelId { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public List<int> HouseholdIds { get; set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -58,6 +66,25 @@ public class CompleteModel : PageModel
         });
 
         await _db.SaveChangesAsync();
-        return RedirectToPage("/Index");
+        return LocalRedirect(BuildDashboardPath());
+    }
+
+    public string BuildDashboardPath()
+    {
+        var queryBuilder = new QueryBuilder();
+
+        if (LabelId.HasValue)
+        {
+            queryBuilder.Add("labelId", LabelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var householdId in HouseholdIds)
+        {
+            queryBuilder.Add("householdIds", householdId.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var queryString = queryBuilder.ToQueryString().Value;
+        var pagePath = $"{Request.PathBase}/";
+        return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 }
