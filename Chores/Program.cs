@@ -278,8 +278,7 @@ app.MapPost("/api/auth/assertion/result", async (HttpContext httpContext) =>
         new AuthenticationProperties
         {
             IsPersistent = true,
-            AllowRefresh = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+            AllowRefresh = true
         });
 
     return Results.Ok(new { status = "ok" });
