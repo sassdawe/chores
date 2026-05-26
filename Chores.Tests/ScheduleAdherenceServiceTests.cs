@@ -53,10 +53,22 @@ public class ScheduleAdherenceServiceTests
     [InlineData(Schedule.EveryTwoDays, -1, AdherenceStatus.DueSoon)]
     [InlineData(Schedule.EveryTwoDays, -2, AdherenceStatus.DueToday)]
     [InlineData(Schedule.EveryTwoDays, -3, AdherenceStatus.Overdue)]
+    [InlineData(Schedule.EveryThreeDays, -1, AdherenceStatus.OnTime)]
+    [InlineData(Schedule.EveryThreeDays, -2, AdherenceStatus.DueSoon)]
+    [InlineData(Schedule.EveryThreeDays, -3, AdherenceStatus.DueToday)]
+    [InlineData(Schedule.EveryThreeDays, -4, AdherenceStatus.Overdue)]
     [InlineData(Schedule.TwiceAWeek, -1, AdherenceStatus.OnTime)]
     [InlineData(Schedule.TwiceAWeek, -2, AdherenceStatus.DueSoon)]
     [InlineData(Schedule.TwiceAWeek, -3, AdherenceStatus.DueToday)]
     [InlineData(Schedule.TwiceAWeek, -4, AdherenceStatus.Overdue)]
+    [InlineData(Schedule.EveryThreeWeeks, -13, AdherenceStatus.OnTime)]
+    [InlineData(Schedule.EveryThreeWeeks, -14, AdherenceStatus.DueSoon)]
+    [InlineData(Schedule.EveryThreeWeeks, -21, AdherenceStatus.DueToday)]
+    [InlineData(Schedule.EveryThreeWeeks, -22, AdherenceStatus.Overdue)]
+    [InlineData(Schedule.BiMonthly, -49, AdherenceStatus.OnTime)]
+    [InlineData(Schedule.BiMonthly, -50, AdherenceStatus.DueSoon)]
+    [InlineData(Schedule.BiMonthly, -60, AdherenceStatus.DueToday)]
+    [InlineData(Schedule.BiMonthly, -61, AdherenceStatus.Overdue)]
     public void ScheduleAdherence_VariousOffsets(Schedule schedule, int daysAgo, AdherenceStatus expected)
     {
         var lastCompleted = Now.AddDays(daysAgo);
@@ -86,7 +98,9 @@ public class ScheduleAdherenceServiceTests
     [Theory]
     [InlineData(Schedule.Weekly, -4, AdherenceStatus.DueSoon, 3)]
     [InlineData(Schedule.BiWeekly, -9, AdherenceStatus.DueSoon, 5)]
+    [InlineData(Schedule.EveryThreeWeeks, -14, AdherenceStatus.DueSoon, 7)]
     [InlineData(Schedule.Monthly, -23, AdherenceStatus.DueSoon, 7)]
+    [InlineData(Schedule.BiMonthly, -50, AdherenceStatus.DueSoon, 10)]
     [InlineData(Schedule.Quarterly, -77, AdherenceStatus.DueSoon, 14)]
     [InlineData(Schedule.EverySixMonths, -161, AdherenceStatus.DueSoon, 21)]
     [InlineData(Schedule.Yearly, -335, AdherenceStatus.DueSoon, 30)]
@@ -104,7 +118,10 @@ public class ScheduleAdherenceServiceTests
     [Theory]
     [InlineData(Schedule.Weekly, -4, "Due in 3 days", "text-bg-primary")]
     [InlineData(Schedule.BiWeekly, -9, "Due in 5 days", "text-bg-info")]
+    [InlineData(Schedule.EveryThreeDays, -2, "Due tomorrow", "text-bg-warning")]
+    [InlineData(Schedule.EveryThreeWeeks, -14, "Due in 7 days", "text-bg-info")]
     [InlineData(Schedule.Monthly, -23, "Due this week", "text-bg-info")]
+    [InlineData(Schedule.BiMonthly, -50, "Due in 10 days", "text-bg-info")]
     [InlineData(Schedule.Quarterly, -77, "Due in 14 days", "text-bg-info")]
     [InlineData(Schedule.EverySixMonths, -161, "Due in 21 days", "text-bg-info")]
     [InlineData(Schedule.Yearly, -335, "Due in 30 days", "text-bg-info")]
@@ -125,5 +142,31 @@ public class ScheduleAdherenceServiceTests
 
         Assert.Equal(AdherenceStatus.DueToday, adherence.Status);
         Assert.Equal("text-bg-due-today", ScheduleAdherenceService.ToBadgeClass(Schedule.Weekly, adherence));
+    }
+
+    [Fact]
+    public void ScheduleExtensions_ReturnSelectableSchedulesWithFriendlyLabelsInExpectedOrder()
+    {
+        var schedules = ScheduleExtensions.GetSelectableSchedules()
+            .Select(schedule => schedule.ToFriendlyLabel())
+            .ToArray();
+
+        Assert.Equal(
+        [
+            "Daily",
+            "Twice a week",
+            "Every two days",
+            "Every three days",
+            "Weekly",
+            "Bi-weekly",
+            "Every three weeks",
+            "Monthly",
+            "Bi-monthly",
+            "Quarterly",
+            "Every 6 months",
+            "Yearly",
+            "Every 2 years"
+        ],
+        schedules);
     }
 }

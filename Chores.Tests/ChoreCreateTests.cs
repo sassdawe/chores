@@ -72,7 +72,7 @@ public class ChoreCreateTests
 
         Assert.IsType<PageResult>(result);
         Assert.Empty(model.Spaces);
-        Assert.True(model.ModelState.ContainsKey(nameof(CreateModel.HouseholdId)));
+        Assert.True(model.ModelState.ContainsKey(nameof(Chores.Pages.Chores.CreateModel.HouseholdId)));
     }
 
     [Fact]

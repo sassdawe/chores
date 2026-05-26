@@ -21,9 +21,12 @@ The app is designed to be a **tracker**, so it make it super easy to record when
   - Daily
   - Twice a week
   - Every two days
+  - Every three days
   - Weekly
   - Bi-weekly
+  - Every three weeks
   - Monthly
+  - Bi-monthly
   - Quarterly
   - Every 6 months
   - Yearly

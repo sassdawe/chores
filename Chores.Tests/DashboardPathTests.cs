@@ -261,9 +261,9 @@ public class DashboardPathTests
         Assert.Equal("/chores/Chores?labelId=7", path);
     }
 
-    private static IndexModel CreateModel(AppDbContext db, string pathBase)
+    private static Chores.Pages.IndexModel CreateModel(AppDbContext db, string pathBase)
     {
-        return new IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {
@@ -278,9 +278,9 @@ public class DashboardPathTests
         };
     }
 
-    private static IndexModel CreateAuthenticatedModel(AppDbContext db, string pathBase, string loginName)
+    private static Chores.Pages.IndexModel CreateAuthenticatedModel(AppDbContext db, string pathBase, string loginName)
     {
-        return new IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {

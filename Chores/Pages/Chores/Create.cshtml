@@ -51,7 +51,7 @@
             <div class="mb-3">
                 <label for="Schedule" class="form-label">Schedule</label>
                 <select id="Schedule" name="Schedule" class="form-select">
-                    @foreach (Schedule s in Enum.GetValues(typeof(Schedule)))
+                    @foreach (var s in ScheduleExtensions.GetSelectableSchedules())
                     {
                         <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToFriendlyLabel()</option>
                     }
