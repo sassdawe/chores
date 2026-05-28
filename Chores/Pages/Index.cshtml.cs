@@ -136,6 +136,11 @@ public class IndexModel : PageModel
             queryBuilder.Add("householdId", EffectiveHouseholdIds[0].ToString(CultureInfo.InvariantCulture));
         }
 
+        if (ActiveLabelId.HasValue)
+        {
+            queryBuilder.Add("labelId", ActiveLabelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
         var pagePath = $"{Request.PathBase}/Chores/Create";
         var queryString = queryBuilder.ToQueryString().Value;
         return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";

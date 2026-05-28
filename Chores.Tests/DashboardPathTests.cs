@@ -49,6 +49,19 @@ public class DashboardPathTests
     }
 
     [Fact]
+    public void BuildCreateChorePath_PreservesActiveLabel()
+    {
+        using var db = CreateDbContext();
+        var model = CreateModel(db, "/chores");
+        model.EffectiveHouseholdIds = [4];
+        model.ActiveLabelId = 9;
+
+        var path = model.BuildCreateChorePath();
+
+        Assert.Equal("/chores/Chores/Create?householdId=4&labelId=9", path);
+    }
+
+    [Fact]
     public void BuildCompletePath_PreservesActiveFilters()
     {
         using var db = CreateDbContext();
