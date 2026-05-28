@@ -49,6 +49,19 @@ public class DashboardPathTests
     }
 
     [Fact]
+    public void BuildCreateChorePath_PreservesActiveLabel()
+    {
+        using var db = CreateDbContext();
+        var model = CreateModel(db, "/chores");
+        model.EffectiveHouseholdIds = [4];
+        model.ActiveLabelId = 9;
+
+        var path = model.BuildCreateChorePath();
+
+        Assert.Equal("/chores/Chores/Create?householdId=4&labelId=9", path);
+    }
+
+    [Fact]
     public void BuildCompletePath_PreservesActiveFilters()
     {
         using var db = CreateDbContext();
@@ -261,9 +274,9 @@ public class DashboardPathTests
         Assert.Equal("/chores/Chores?labelId=7", path);
     }
 
-    private static IndexModel CreateModel(AppDbContext db, string pathBase)
+    private static Chores.Pages.IndexModel CreateModel(AppDbContext db, string pathBase)
     {
-        return new IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {
@@ -278,9 +291,9 @@ public class DashboardPathTests
         };
     }
 
-    private static IndexModel CreateAuthenticatedModel(AppDbContext db, string pathBase, string loginName)
+    private static Chores.Pages.IndexModel CreateAuthenticatedModel(AppDbContext db, string pathBase, string loginName)
     {
-        return new IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {
