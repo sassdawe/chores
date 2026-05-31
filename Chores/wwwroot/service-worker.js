@@ -54,17 +54,16 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(request, { ignoreSearch: true }).then(cached => {
-      const fetchAndCache = fetch(request).then(response => {
+    fetch(request)
+      .then(response => {
         if (response.ok && response.type === 'basic') {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
         }
         return response;
-      }).catch(() => Response.error());
-
-      return cached || fetchAndCache;
-    })
+      })
+      .catch(() => caches.match(request, { ignoreSearch: true })
+        .then(cached => cached || Response.error()))
   );
 });
 
