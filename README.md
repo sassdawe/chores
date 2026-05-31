@@ -36,6 +36,7 @@ The app is designed to be a **tracker**, so it make it super easy to record when
 - Create and rename multiple named spaces and manage chores, members, and labels for each one
 - Space owners can invite members by login name, and invited users can accept invites from their profile without leaving their existing spaces
 - Passwordless authentication with FIDO2/passkeys
+- Installable Progressive Web App (PWA) with an offline fallback
 - SQLite persistence (single-container friendly)
 
 ## Tech Stack

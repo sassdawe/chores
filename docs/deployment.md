@@ -59,7 +59,7 @@ volumes:
   chores-data:
 ```
 
-> **Note:** FIDO2/passkeys require a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts). On a local network without HTTPS, most browsers only allow `localhost` as a secure context. If you access the app from another device (e.g. your phone to a Raspberry Pi), you will need HTTPS — either via a reverse proxy (see below) or a local certificate.
+> **Note:** FIDO2/passkeys and PWA installation require a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts). On a local network without HTTPS, most browsers only allow `localhost` as a secure context. If you access the app from another device (e.g. your phone to a Raspberry Pi), you will need HTTPS — either via a reverse proxy (see below) or a local certificate.
 
 ### Reverse proxy with HTTPS (optional)
 
