@@ -3,8 +3,6 @@ const APP_SHELL = [
   '/offline.html',
   '/manifest.json',
   '/favicon.ico',
-  '/css/site.css',
-  '/js/site.js',
   '/lib/bootstrap/dist/css/bootstrap.min.css',
   '/lib/bootstrap/dist/js/bootstrap.bundle.min.js',
   '/lib/jquery/dist/jquery.min.js',
