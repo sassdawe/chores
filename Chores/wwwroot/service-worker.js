@@ -52,16 +52,21 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    fetch(request)
-      .then(response => {
+    (async () => {
+      try {
+        const response = await fetch(request);
+
         if (response.ok && response.type === 'basic') {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+          event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(request, copy)));
         }
+
         return response;
-      })
-      .catch(() => caches.match(request)
-        .then(cached => cached || Response.error()))
+      } catch {
+        const cached = await caches.match(request);
+        return cached || Response.error();
+      }
+    })()
   );
 });
 
