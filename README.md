@@ -1,4 +1,4 @@
-# Chores
+# Chores MVP
 
 Chores is a self-hosted chore tracker for homes, offices, garages, online estates, and other named spaces built with ASP.NET Core Razor Pages.  
 It records when chores are completed and shows whether each chore is on time or overdue based on its schedule.
