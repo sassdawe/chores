@@ -32,7 +32,9 @@ The app is designed to be a **tracker**, so it make it super easy to record when
   - Yearly
   - Every 2 years
 - Mark chores as complete with timestamped history
+- Mark chores quickly with the current time or a one-tap "done yesterday" action
 - View overdue/on-time status on the dashboard for all spaces or a selected space
+- See the last-completion status on the chore completion screen and summary stats in manage chores
 - Create and rename multiple named spaces and manage chores, members, and labels for each one
 - Space owners can invite members by login name, and invited users can accept invites from their profile without leaving their existing spaces
 - Passwordless authentication with FIDO2/passkeys

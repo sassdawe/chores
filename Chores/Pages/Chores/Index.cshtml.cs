@@ -13,17 +13,26 @@ namespace Chores.Pages.Chores;
 public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly ScheduleAdherenceService _adherence;
     private readonly HouseholdMembershipService _householdMemberships;
 
-    public IndexModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    public IndexModel(
+        AppDbContext db,
+        ScheduleAdherenceService adherence,
+        HouseholdMembershipService householdMemberships)
     {
         _db = db;
+        _adherence = adherence;
         _householdMemberships = householdMemberships;
     }
 
     public List<Chore> Chores { get; set; } = [];
     public List<Label> AllLabels { get; set; } = [];
     public int? ActiveLabelId { get; set; }
+    public int TotalChoreCount { get; set; }
+    public int OnTimeChoreCount { get; set; }
+    public int NeverDoneChoreCount { get; set; }
+    public int MissedTargetChoreCount { get; set; }
 
     public async Task OnGetAsync(int? labelId)
     {
@@ -51,6 +60,38 @@ public class IndexModel : PageModel
             .OrderBy(c => c.Household.Name)
             .ThenBy(c => c.Name)
             .ToListAsync();
+
+        TotalChoreCount = Chores.Count;
+        if (Chores.Count == 0)
+        {
+            return;
+        }
+
+        var choreIds = Chores.Select(chore => chore.Id).ToList();
+        var latestRecords = await _db.CompletionRecords
+            .Where(record => choreIds.Contains(record.ChoreId))
+            .GroupBy(record => record.ChoreId)
+            .Select(group => group.OrderByDescending(record => record.CompletedAtUtc).First())
+            .ToListAsync();
+
+        var lastByChore = latestRecords.ToDictionary(record => record.ChoreId);
+        var adherences = Chores
+            .Select(chore =>
+            {
+                lastByChore.TryGetValue(chore.Id, out var lastRecord);
+                return _adherence.Evaluate(chore.Schedule, lastRecord?.CompletedAtUtc);
+            })
+            .ToList();
+
+        NeverDoneChoreCount = adherences.Count(adherence =>
+            adherence.Status == AdherenceStatus.Overdue
+            && adherence.DaysOverdue == int.MaxValue);
+
+        MissedTargetChoreCount = adherences.Count(adherence =>
+            adherence.Status == AdherenceStatus.Overdue
+            && adherence.DaysOverdue != int.MaxValue);
+
+        OnTimeChoreCount = TotalChoreCount - NeverDoneChoreCount - MissedTargetChoreCount;
     }
 
     public string BuildManageChoresPath(int? labelId = null)

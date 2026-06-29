@@ -14,15 +14,22 @@ namespace Chores.Pages.Chores;
 public class CompleteModel : PageModel
 {
     private readonly AppDbContext _db;
+    private readonly ScheduleAdherenceService _adherence;
     private readonly HouseholdMembershipService _householdMemberships;
 
-    public CompleteModel(AppDbContext db, HouseholdMembershipService householdMemberships)
+    public CompleteModel(
+        AppDbContext db,
+        ScheduleAdherenceService adherence,
+        HouseholdMembershipService householdMemberships)
     {
         _db = db;
+        _adherence = adherence;
         _householdMemberships = householdMemberships;
     }
 
     public Chore Chore { get; set; } = null!;
+    public DateTime? LastCompletedUtc { get; set; }
+    public ScheduleAdherence? LastCompletionAdherence { get; set; }
 
     [BindProperty]
     public DateTime CompletedAt { get; set; }
@@ -44,32 +51,19 @@ public class CompleteModel : PageModel
 
         Chore = chore;
         CompletedAt = DateTime.Now;
+        await LoadLastCompletionStatusAsync(chore);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
-
-        var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id);
-        if (chore is null) return NotFound();
-        if (!await _householdMemberships.CanAccessHouseholdAsync(user.LoginName, chore.HouseholdId)) return NotFound();
-
-        // Clamp to now — never allow future completions
         var completedAtUtc = DateTime.SpecifyKind(CompletedAt, DateTimeKind.Local).ToUniversalTime();
-        if (completedAtUtc > DateTime.UtcNow)
-            completedAtUtc = DateTime.UtcNow;
+        return await SaveCompletionAsync(id, completedAtUtc);
+    }
 
-        _db.CompletionRecords.Add(new CompletionRecord
-        {
-            ChoreId = chore.Id,
-            CompletedByUserId = user.Id,
-            CompletedAtUtc = completedAtUtc
-        });
-
-        await _db.SaveChangesAsync();
-        return LocalRedirect(BuildDashboardPath());
+    public Task<IActionResult> OnPostYesterdayAsync(int id)
+    {
+        return SaveCompletionAsync(id, DateTime.UtcNow.AddHours(-24));
     }
 
     public string BuildDashboardPath()
@@ -94,5 +88,42 @@ public class CompleteModel : PageModel
         var queryString = queryBuilder.ToQueryString().Value;
         var pagePath = $"{Request.PathBase}/";
         return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
+    }
+
+    private async Task<IActionResult> SaveCompletionAsync(int id, DateTime completedAtUtc)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
+        if (user is null) return NotFound();
+
+        var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id);
+        if (chore is null) return NotFound();
+        if (!await _householdMemberships.CanAccessHouseholdAsync(user.LoginName, chore.HouseholdId)) return NotFound();
+
+        if (completedAtUtc > DateTime.UtcNow)
+        {
+            completedAtUtc = DateTime.UtcNow;
+        }
+
+        _db.CompletionRecords.Add(new CompletionRecord
+        {
+            ChoreId = chore.Id,
+            CompletedByUserId = user.Id,
+            CompletedAtUtc = completedAtUtc
+        });
+
+        await _db.SaveChangesAsync();
+        return LocalRedirect(BuildDashboardPath());
+    }
+
+    private async Task LoadLastCompletionStatusAsync(Chore chore)
+    {
+        var lastCompletedUtc = await _db.CompletionRecords
+            .Where(record => record.ChoreId == chore.Id)
+            .OrderByDescending(record => record.CompletedAtUtc)
+            .Select(record => (DateTime?)record.CompletedAtUtc)
+            .FirstOrDefaultAsync();
+
+        LastCompletedUtc = lastCompletedUtc;
+        LastCompletionAdherence = _adherence.Evaluate(chore.Schedule, lastCompletedUtc);
     }
 }

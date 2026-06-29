@@ -6,6 +6,27 @@
 
 <div style="max-width:480px; margin:40px auto; text-align:center;">
     <h2 class="mb-3">@Model.Chore.Name</h2>
+    @if (Model.LastCompletionAdherence is not null)
+    {
+        var lastCompletionBadgeClass = ScheduleAdherenceService.ToBadgeClass(Model.Chore.Schedule, Model.LastCompletionAdherence);
+        var lastCompletionStatusText = ScheduleAdherenceService.ToDisplayText(Model.Chore.Schedule, Model.LastCompletionAdherence);
+
+        <div class="mb-4">
+            <div class="text-muted small mb-2">Last completion status</div>
+            <span class="badge @lastCompletionBadgeClass fs-6">@lastCompletionStatusText</span>
+            <div class="text-muted small mt-2">
+                @if (Model.LastCompletedUtc.HasValue)
+                {
+                    <span>Last completed @Model.LastCompletedUtc.Value.ToLocalTime().ToString("g")</span>
+                }
+                else
+                {
+                    <span>No completion recorded yet.</span>
+                }
+            </div>
+        </div>
+    }
+
     <p class="text-muted mb-4">When was this done?</p>
 
     <form method="post" asp-page-handler="" asp-route-id="@Model.Chore.Id">
@@ -21,6 +42,13 @@
         {
             <input type="hidden" name="HouseholdIds" value="@householdId" />
         }
+        <div class="mb-3">
+            <button type="submit"
+                    asp-page-handler="Yesterday"
+                    class="btn btn-outline-success btn-lg w-100">
+                Done yesterday
+            </button>
+        </div>
         <div class="mb-4">
             <input type="datetime-local"
                    id="completedAt"

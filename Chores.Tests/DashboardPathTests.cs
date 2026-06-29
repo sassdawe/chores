@@ -79,7 +79,7 @@ public class DashboardPathTests
     public void CompleteBuildDashboardPath_PreservesActiveFilters()
     {
         using var db = CreateDbContext();
-        var model = new CompleteModel(db, new HouseholdMembershipService(db))
+        var model = new CompleteModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
         {
             LabelId = 7,
             Sort = "due",
@@ -153,6 +153,37 @@ public class DashboardPathTests
         await model.OnGetAsync(null, null, "due");
 
         Assert.Equal(["Overdue", "Due Today", "On Time"], model.ChoreStatuses.Select(status => status.Chore.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task ManageChoresOnGetAsync_ComputesSummaryCounts()
+    {
+        await using var db = CreateDbContext();
+        var household = new Household { Name = "Home" };
+        var user = new AppUser { LoginName = "alice" };
+        var onTimeChore = new Chore { Name = "On Time", Household = household, Schedule = Schedule.Weekly };
+        var neverDoneChore = new Chore { Name = "Never Done", Household = household, Schedule = Schedule.Weekly };
+        var missedChore = new Chore { Name = "Missed", Household = household, Schedule = Schedule.Weekly };
+
+        db.Households.Add(household);
+        db.Users.Add(user);
+        db.HouseholdMemberships.Add(new HouseholdMembership { User = user, Household = household, IsOwner = true, JoinedAtUtc = DateTime.UtcNow });
+        db.Chores.AddRange(onTimeChore, neverDoneChore, missedChore);
+        await db.SaveChangesAsync();
+
+        db.CompletionRecords.AddRange(
+            new CompletionRecord { ChoreId = onTimeChore.Id, CompletedByUserId = user.Id, CompletedAtUtc = DateTime.UtcNow.AddDays(-2) },
+            new CompletionRecord { ChoreId = missedChore.Id, CompletedByUserId = user.Id, CompletedAtUtc = DateTime.UtcNow.AddDays(-10) });
+        await db.SaveChangesAsync();
+
+        var model = CreateAuthenticatedChoresIndexModel(db, "/chores", user.LoginName);
+
+        await model.OnGetAsync(null);
+
+        Assert.Equal(3, model.TotalChoreCount);
+        Assert.Equal(1, model.OnTimeChoreCount);
+        Assert.Equal(1, model.NeverDoneChoreCount);
+        Assert.Equal(1, model.MissedTargetChoreCount);
     }
 
     [Fact]
@@ -315,7 +346,7 @@ public class DashboardPathTests
 
     private static Chores.Pages.Chores.IndexModel CreateChoresIndexModel(AppDbContext db, string pathBase)
     {
-        return new Chores.Pages.Chores.IndexModel(db, new HouseholdMembershipService(db))
+        return new Chores.Pages.Chores.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
         {
             PageContext = new PageContext
             {
@@ -325,6 +356,28 @@ public class DashboardPathTests
                     {
                         PathBase = new PathString(pathBase)
                     }
+                }
+            }
+        };
+    }
+
+    private static Chores.Pages.Chores.IndexModel CreateAuthenticatedChoresIndexModel(AppDbContext db, string pathBase, string loginName)
+    {
+        return new Chores.Pages.Chores.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        {
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    Request =
+                    {
+                        PathBase = new PathString(pathBase)
+                    },
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.Name, loginName)
+                    ],
+                    "TestAuth"))
                 }
             }
         };
