@@ -29,7 +29,7 @@
 
     <p class="text-muted mb-4">When was this done?</p>
 
-    <form method="post" asp-page-handler="" asp-route-id="@Model.Chore.Id">
+    <form method="post" asp-page-handler="Yesterday" asp-route-id="@Model.Chore.Id">
         @if (Model.LabelId.HasValue)
         {
             <input type="hidden" asp-for="LabelId" />
@@ -43,12 +43,25 @@
             <input type="hidden" name="HouseholdIds" value="@householdId" />
         }
         <div class="mb-3">
-            <button type="submit"
-                    asp-page-handler="Yesterday"
-                    class="btn btn-outline-success btn-lg w-100">
+            <button type="submit" class="btn btn-outline-success btn-lg w-100">
                 Done yesterday
             </button>
         </div>
+    </form>
+
+    <form method="post" asp-page-handler="" asp-route-id="@Model.Chore.Id">
+        @if (Model.LabelId.HasValue)
+        {
+            <input type="hidden" asp-for="LabelId" />
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Sort))
+        {
+            <input type="hidden" asp-for="Sort" />
+        }
+        @foreach (var householdId in Model.HouseholdIds)
+        {
+            <input type="hidden" name="HouseholdIds" value="@householdId" />
+        }
         <div class="mb-4">
             <input type="datetime-local"
                    id="completedAt"

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 namespace Chores.Tests;
 
@@ -71,6 +72,21 @@ public class CompleteModelTests
         var savedCompletion = await db.CompletionRecords.SingleAsync();
         Assert.Equal(chore.Id, savedCompletion.ChoreId);
         Assert.InRange(savedCompletion.CompletedAtUtc, beforeSaveUtc.AddHours(-24).AddSeconds(-5), DateTime.UtcNow.AddHours(-24).AddSeconds(5));
+    }
+
+    [Fact]
+    public void CompletePage_RendersYesterdayActionAsPostForm()
+    {
+        var pagePath = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..",
+            "Chores", "Pages", "Chores", "Complete.cshtml"));
+
+        var markup = File.ReadAllText(pagePath);
+
+        Assert.Matches(
+            new Regex("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model\\.Chore\\.Id\">[\\s\\S]*?<button type=\"submit\" class=\"btn btn-outline-success btn-lg w-100\">", RegexOptions.CultureInvariant),
+            markup);
     }
 
     private static CompleteModel CreateAuthenticatedModel(AppDbContext db, string loginName)
