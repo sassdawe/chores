@@ -32,6 +32,33 @@
     </div>
 }
 
+<div class="row row-cols-2 row-cols-lg-4 g-2 mb-3">
+    <div class="col">
+        <div class="border rounded-3 p-3 h-100">
+            <div class="text-muted small text-uppercase">Registered</div>
+            <div class="fs-4 fw-semibold">@Model.TotalChoreCount</div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="border rounded-3 p-3 h-100">
+            <div class="text-muted small text-uppercase">On time</div>
+            <div class="fs-4 fw-semibold text-success">@Model.OnTimeChoreCount</div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="border rounded-3 p-3 h-100">
+            <div class="text-muted small text-uppercase">Never done</div>
+            <div class="fs-4 fw-semibold text-secondary">@Model.NeverDoneChoreCount</div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="border rounded-3 p-3 h-100">
+            <div class="text-muted small text-uppercase">Missed target</div>
+            <div class="fs-4 fw-semibold text-danger">@Model.MissedTargetChoreCount</div>
+        </div>
+    </div>
+</div>
+
 @if (!Model.Chores.Any())
 {
     <p class="text-muted">No chores yet. Add one to get started.</p>
