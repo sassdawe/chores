@@ -67,20 +67,9 @@ public class IndexModel : PageModel
             return;
         }
 
-        var choreIds = Chores.Select(chore => chore.Id).ToList();
-        var latestRecords = await _db.CompletionRecords
-            .Where(record => choreIds.Contains(record.ChoreId))
-            .GroupBy(record => record.ChoreId)
-            .Select(group => group.OrderByDescending(record => record.CompletedAtUtc).First())
-            .ToListAsync();
-
-        var lastByChore = latestRecords.ToDictionary(record => record.ChoreId);
-        var adherences = Chores
-            .Select(chore =>
-            {
-                lastByChore.TryGetValue(chore.Id, out var lastRecord);
-                return _adherence.Evaluate(chore.Schedule, lastRecord?.CompletedAtUtc);
-            })
+        var latestByChore = await ChoreCompletionAdherenceQuery.GetLatestByChoreAsync(_db, Chores, _adherence);
+        var adherences = latestByChore.Values
+            .Select(item => item.Adherence)
             .ToList();
 
         NeverDoneChoreCount = adherences.Count(adherence =>
