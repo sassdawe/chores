@@ -41,10 +41,11 @@ public class CompleteModelTests
         var result = await model.OnGetAsync(chore.Id);
 
         Assert.IsType<PageResult>(result);
-Assert.Equal(lastCompletedUtc, model.LastCompletedUtc);
-Assert.NotNull(model.LastCompletionAdherence);
-Assert.Equal(AdherenceStatus.Overdue, model.LastCompletionAdherence!.Status);
-Assert.InRange(model.LastCompletionAdherence.DaysOverdue, 3, 4);
+        Assert.Equal(lastCompletedUtc, model.LastCompletedUtc);
+        Assert.NotNull(model.LastCompletionAdherence);
+        Assert.Equal(AdherenceStatus.Overdue, model.LastCompletionAdherence!.Status);
+        Assert.InRange(model.LastCompletionAdherence.DaysOverdue, 3, 4);
+    }
 
     [Fact]
     public async Task OnPostYesterdayAsync_SavesCompletionTwentyFourHoursAgo()
@@ -83,8 +84,8 @@ Assert.InRange(model.LastCompletionAdherence.DaysOverdue, 3, 4);
 
         var markup = File.ReadAllText(pagePath);
 
-Assert.Contains("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model.Chore.Id\">", markup);
-Assert.Contains("Done yesterday", markup);
+        Assert.Contains("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model.Chore.Id\">", markup);
+        Assert.Contains("Done yesterday", markup);
     }
 
     private static CompleteModel CreateAuthenticatedModel(AppDbContext db, string loginName)
