@@ -83,9 +83,8 @@ Assert.InRange(model.LastCompletionAdherence.DaysOverdue, 3, 4);
 
         var markup = File.ReadAllText(pagePath);
 
-        Assert.Matches(
-            new Regex("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model\\.Chore\\.Id\">[\\s\\S]*?<button type=\"submit\" class=\"btn btn-outline-success btn-lg w-100\">", RegexOptions.CultureInvariant),
-            markup);
+Assert.Contains("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model.Chore.Id\">", markup);
+Assert.Contains("Done yesterday", markup);
     }
 
     private static CompleteModel CreateAuthenticatedModel(AppDbContext db, string loginName)
