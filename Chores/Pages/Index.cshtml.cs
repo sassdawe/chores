@@ -83,21 +83,12 @@ public class IndexModel : PageModel
 
         var chores = await choresQuery.ToListAsync();
 
-        var choreIds = chores.Select(c => c.Id).ToList();
-
-        var latestRecords = await _db.CompletionRecords
-            .Where(r => choreIds.Contains(r.ChoreId))
-            .GroupBy(r => r.ChoreId)
-            .Select(g => g.OrderByDescending(r => r.CompletedAtUtc).First())
-            .ToListAsync();
-
-        var lastByChore = latestRecords.ToDictionary(r => r.ChoreId);
+        var latestByChore = await ChoreCompletionAdherenceQuery.GetLatestByChoreAsync(_db, chores, _adherence);
 
         ChoreStatuses = SortChoreStatuses(chores.Select(c =>
         {
-            lastByChore.TryGetValue(c.Id, out var last);
-            var adherence = _adherence.Evaluate(c.Schedule, last?.CompletedAtUtc);
-            return new ChoreStatus(c, adherence, last?.CompletedAtUtc);
+            var latest = latestByChore[c.Id];
+            return new ChoreStatus(c, latest.Adherence, latest.LastCompletedAtUtc);
         })).ToList();
     }
 
