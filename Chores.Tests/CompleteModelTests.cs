@@ -88,6 +88,85 @@ public class CompleteModelTests
         Assert.Contains("Done yesterday", markup);
     }
 
+    [Fact]
+    public async Task OnPostSkipAsync_SavesSkippedRecord()
+    {
+        await using var db = CreateDbContext();
+        var household = new Household { Name = "Home" };
+        var user = new AppUser { LoginName = "alice" };
+        var chore = new Chore { Name = "Vacuum", Household = household, Schedule = Schedule.Weekly };
+
+        db.Households.Add(household);
+        db.Users.Add(user);
+        db.HouseholdMemberships.Add(new HouseholdMembership { User = user, Household = household, IsOwner = true, JoinedAtUtc = DateTime.UtcNow });
+        db.Chores.Add(chore);
+        await db.SaveChangesAsync();
+
+        var model = CreateAuthenticatedModel(db, user.LoginName);
+        var beforeSaveUtc = DateTime.UtcNow;
+
+        var result = await model.OnPostSkipAsync(chore.Id);
+
+        var redirect = Assert.IsType<LocalRedirectResult>(result);
+        Assert.Equal("/", redirect.Url);
+
+        var savedRecord = await db.CompletionRecords.SingleAsync();
+        Assert.Equal(chore.Id, savedRecord.ChoreId);
+        Assert.True(savedRecord.IsSkipped);
+        Assert.InRange(savedRecord.CompletedAtUtc, beforeSaveUtc.AddSeconds(-5), DateTime.UtcNow.AddSeconds(5));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_SavesNonSkippedRecord()
+    {
+        await using var db = CreateDbContext();
+        var household = new Household { Name = "Home" };
+        var user = new AppUser { LoginName = "alice" };
+        var chore = new Chore { Name = "Mop", Household = household, Schedule = Schedule.Weekly };
+
+        db.Households.Add(household);
+        db.Users.Add(user);
+        db.HouseholdMemberships.Add(new HouseholdMembership { User = user, Household = household, IsOwner = true, JoinedAtUtc = DateTime.UtcNow });
+        db.Chores.Add(chore);
+        await db.SaveChangesAsync();
+
+        var model = CreateAuthenticatedModel(db, user.LoginName);
+        model.CompletedAt = DateTime.Now;
+
+        await model.OnPostAsync(chore.Id);
+
+        var savedRecord = await db.CompletionRecords.SingleAsync();
+        Assert.False(savedRecord.IsSkipped);
+    }
+
+    [Fact]
+    public void CompletePage_RendersSkipActionAsPostForm()
+    {
+        var pagePath = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..",
+            "Chores", "Pages", "Chores", "Complete.cshtml"));
+
+        var markup = File.ReadAllText(pagePath);
+
+        Assert.Contains("asp-page-handler=\"Skip\"", markup);
+        Assert.Contains("Skip this chore", markup);
+    }
+
+    [Fact]
+    public void HistoryPage_RendersSkippedColumn()
+    {
+        var pagePath = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..",
+            "Chores", "Pages", "Chores", "History.cshtml"));
+
+        var markup = File.ReadAllText(pagePath);
+
+        Assert.Contains("Skipped", markup);
+        Assert.Contains("IsSkipped", markup);
+    }
+
     private static CompleteModel CreateAuthenticatedModel(AppDbContext db, string loginName)
     {
         return new CompleteModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))

@@ -23,6 +23,7 @@ else
                 <th>Completed</th>
                 <th>By</th>
                 <th>On schedule?</th>
+                <th>Skipped</th>
             </tr>
         </thead>
         <tbody>
@@ -62,6 +63,12 @@ else
                         else
                         {
                             <span class="badge bg-danger">@entry.Adherence.DaysOverdue days late</span>
+                        }
+                    </td>
+                    <td>
+                        @if (entry.Record.IsSkipped)
+                        {
+                            <span class="badge bg-warning text-dark">Skipped</span>
                         }
                     </td>
                 </tr>
