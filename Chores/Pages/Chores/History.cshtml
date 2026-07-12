@@ -49,7 +49,7 @@ else
                         }
                         else if (entry.Adherence.Status == AdherenceStatus.DueToday)
                         {
-                            <span class="badge @ScheduleAdherenceService.ToBadgeClass(Model.Chore.Schedule, entry.Adherence)">On due date</span>
+                            <span class="badge bg-success">On due date</span>
                         }
                         else if (entry.Adherence.DaysOverdue == 1)
                         {
