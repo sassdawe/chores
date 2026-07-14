@@ -118,9 +118,9 @@
         setInterval(() => { input.max = toLocalDateTimeString(new Date()); }, 60000);
     })();
 
-    function confirmSkip() {
-        if (confirm('Skip this chore? The schedule timer will reset from now, but it will be marked as skipped in the history.')) {
-            document.getElementById('skipForm').submit();
+    document.getElementById('skipForm')?.addEventListener('submit', (e) => {
+        if (!confirm('Skip this chore? The schedule timer will reset from now, but it will be marked as skipped in the history.')) {
+            e.preventDefault();
         }
-    }
+    });
 </script>
