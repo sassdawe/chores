@@ -10,4 +10,7 @@ public class CompletionRecord
 
     /// <summary>Always stored as UTC.</summary>
     public DateTime CompletedAtUtc { get; set; }
+
+    /// <summary>True when the chore was skipped rather than completed.</summary>
+    public bool IsSkipped { get; set; }
 }

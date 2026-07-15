@@ -20,10 +20,10 @@ else
     <table class="table table-hover">
         <thead>
             <tr>
-                <th>Completed</th>
+                <th>When</th>
                 <th>By</th>
                 <th>On schedule?</th>
-            </tr>
+                <th>Skipped</th>
         </thead>
         <tbody>
             @foreach (var entry in Model.Entries)
@@ -62,6 +62,12 @@ else
                         else
                         {
                             <span class="badge bg-danger">@entry.Adherence.DaysOverdue days late</span>
+                        }
+                    </td>
+                    <td>
+                        @if (entry.Record.IsSkipped)
+                        {
+                            <span class="badge bg-warning text-dark">Skipped</span>
                         }
                     </td>
                 </tr>

@@ -66,6 +66,11 @@ public class CompleteModel : PageModel
         return SaveCompletionAsync(id, DateTime.UtcNow.AddHours(-24));
     }
 
+    public Task<IActionResult> OnPostSkipAsync(int id)
+    {
+        return SaveCompletionAsync(id, DateTime.UtcNow, isSkipped: true);
+    }
+
     public string BuildDashboardPath()
     {
         var queryBuilder = new QueryBuilder();
@@ -90,7 +95,7 @@ public class CompleteModel : PageModel
         return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 
-    private async Task<IActionResult> SaveCompletionAsync(int id, DateTime completedAtUtc)
+    private async Task<IActionResult> SaveCompletionAsync(int id, DateTime completedAtUtc, bool isSkipped = false)
     {
         var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
         if (user is null) return NotFound();
@@ -108,7 +113,8 @@ public class CompleteModel : PageModel
         {
             ChoreId = chore.Id,
             CompletedByUserId = user.Id,
-            CompletedAtUtc = completedAtUtc
+            CompletedAtUtc = completedAtUtc,
+            IsSkipped = isSkipped
         });
 
         await _db.SaveChangesAsync();

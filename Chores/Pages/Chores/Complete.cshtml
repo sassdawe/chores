@@ -72,6 +72,27 @@
         <button type="submit" class="btn btn-success btn-lg me-2">Mark as done</button>
         <a href="@Model.BuildDashboardPath()" class="btn btn-outline-secondary btn-lg">Cancel</a>
     </form>
+
+    <hr class="my-4" />
+
+    <form method="post" asp-page-handler="Skip" asp-route-id="@Model.Chore.Id" id="skipForm">
+        @if (Model.LabelId.HasValue)
+        {
+            <input type="hidden" asp-for="LabelId" />
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Sort))
+        {
+            <input type="hidden" asp-for="Sort" />
+        }
+        @foreach (var householdId in Model.HouseholdIds)
+        {
+            <input type="hidden" name="HouseholdIds" value="@householdId" />
+        }
+        <p class="text-muted small mb-2">Can't do it right now? Skipping resets the schedule timer.</p>
+        <button type="submit" class="btn btn-outline-warning btn-lg w-100">
+            ⚠ Skip this chore
+        </button>
+    </form>
 </div>
 
 <script>
@@ -96,4 +117,10 @@
         // Keep max updated every minute so it never falls behind
         setInterval(() => { input.max = toLocalDateTimeString(new Date()); }, 60000);
     })();
+
+    document.getElementById('skipForm')?.addEventListener('submit', (e) => {
+        if (!confirm('Skip this chore? The schedule timer will reset from now, but it will be marked as skipped in the history.')) {
+            e.preventDefault();
+        }
+    });
 </script>
