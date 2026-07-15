@@ -36,6 +36,10 @@ else
                         {
                             <span class="badge bg-white border text-dark">First completion</span>
                         }
+                        else if (entry.Adherence.Status == AdherenceStatus.AdHoc)
+                        {
+                            <span class="badge text-bg-secondary">Ad-hoc</span>
+                        }
                         else if (entry.Adherence.Status == AdherenceStatus.OnTime)
                         {
                             <span class="badge bg-success">On time</span>
