@@ -164,11 +164,12 @@ public class DashboardPathTests
         var onTimeChore = new Chore { Name = "On Time", Household = household, Schedule = Schedule.Weekly };
         var neverDoneChore = new Chore { Name = "Never Done", Household = household, Schedule = Schedule.Weekly };
         var missedChore = new Chore { Name = "Missed", Household = household, Schedule = Schedule.Weekly };
+        var adHocChore = new Chore { Name = "Ad-hoc", Household = household, Schedule = Schedule.AdHoc };
 
         db.Households.Add(household);
         db.Users.Add(user);
         db.HouseholdMemberships.Add(new HouseholdMembership { User = user, Household = household, IsOwner = true, JoinedAtUtc = DateTime.UtcNow });
-        db.Chores.AddRange(onTimeChore, neverDoneChore, missedChore);
+        db.Chores.AddRange(onTimeChore, neverDoneChore, missedChore, adHocChore);
         await db.SaveChangesAsync();
 
         db.CompletionRecords.AddRange(
@@ -180,7 +181,7 @@ public class DashboardPathTests
 
         await model.OnGetAsync(null);
 
-        Assert.Equal(3, model.TotalChoreCount);
+        Assert.Equal(4, model.TotalChoreCount);
         Assert.Equal(1, model.OnTimeChoreCount);
         Assert.Equal(1, model.NeverDoneChoreCount);
         Assert.Equal(1, model.MissedTargetChoreCount);
