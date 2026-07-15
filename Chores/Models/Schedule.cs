@@ -14,5 +14,6 @@ public enum Schedule
     EveryTwoYears = 9,
     EveryThreeDays = 10,
     EveryThreeWeeks = 11,
-    BiMonthly = 12
+    BiMonthly = 12,
+    AdHoc = 13
 }

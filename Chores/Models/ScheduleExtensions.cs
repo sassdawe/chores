@@ -4,6 +4,7 @@ public static class ScheduleExtensions
 {
     public static IReadOnlyList<Schedule> GetSelectableSchedules() =>
     [
+        Schedule.AdHoc,
         Schedule.Daily,
         Schedule.TwiceAWeek,
         Schedule.EveryTwoDays,
@@ -21,6 +22,7 @@ public static class ScheduleExtensions
 
     public static string ToFriendlyLabel(this Schedule schedule) => schedule switch
     {
+        Schedule.AdHoc => "Ad-hoc",
         Schedule.Daily => "Daily",
         Schedule.TwiceAWeek => "Twice a week",
         Schedule.EveryTwoDays => "Every two days",

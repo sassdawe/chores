@@ -153,6 +153,7 @@ public class ScheduleAdherenceServiceTests
 
         Assert.Equal(
         [
+            "Ad-hoc",
             "Daily",
             "Twice a week",
             "Every two days",
@@ -168,5 +169,26 @@ public class ScheduleAdherenceServiceTests
             "Every 2 years"
         ],
         schedules);
+    }
+
+    [Fact]
+    public void AdHoc_Evaluate_ReturnsAdHocStatus_RegardlessOfCompletion()
+    {
+        var resultNeverDone = _sut.Evaluate(Schedule.AdHoc, null, Now);
+        var resultRecent = _sut.Evaluate(Schedule.AdHoc, Now.AddDays(-1), Now);
+        var resultOld = _sut.Evaluate(Schedule.AdHoc, Now.AddDays(-365), Now);
+
+        Assert.Equal(AdherenceStatus.AdHoc, resultNeverDone.Status);
+        Assert.Equal(AdherenceStatus.AdHoc, resultRecent.Status);
+        Assert.Equal(AdherenceStatus.AdHoc, resultOld.Status);
+    }
+
+    [Fact]
+    public void AdHoc_DisplayHelpers_ReturnStaticLabelAndLightBadge()
+    {
+        var adherence = _sut.Evaluate(Schedule.AdHoc, null, Now);
+
+        Assert.Equal("Ad-hoc", ScheduleAdherenceService.ToDisplayText(Schedule.AdHoc, adherence));
+        Assert.Equal("text-bg-secondary", ScheduleAdherenceService.ToBadgeClass(Schedule.AdHoc, adherence));
     }
 }

@@ -80,7 +80,9 @@ public class IndexModel : PageModel
             adherence.Status == AdherenceStatus.Overdue
             && adherence.DaysOverdue != int.MaxValue);
 
-        OnTimeChoreCount = TotalChoreCount - NeverDoneChoreCount - MissedTargetChoreCount;
+        OnTimeChoreCount = adherences.Count(adherence => adherence.Status is AdherenceStatus.OnTime
+            or AdherenceStatus.DueSoon
+            or AdherenceStatus.DueToday);
     }
 
     public string BuildManageChoresPath(int? labelId = null)

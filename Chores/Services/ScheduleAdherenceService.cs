@@ -2,7 +2,7 @@ using Chores.Models;
 
 namespace Chores.Services;
 
-public enum AdherenceStatus { OnTime, DueSoon, DueToday, Overdue }
+public enum AdherenceStatus { OnTime, DueSoon, DueToday, Overdue, AdHoc }
 
 public record ScheduleAdherence(AdherenceStatus Status, int DaysOverdue, int? DaysUntilDue);
 
@@ -17,6 +17,9 @@ public class ScheduleAdherenceService
     /// <param name="nowUtc">Current UTC time (injected for testability).</param>
     public ScheduleAdherence Evaluate(Schedule schedule, DateTime? lastCompletedUtc, DateTime? nowUtc = null)
     {
+        if (schedule == Schedule.AdHoc)
+            return new ScheduleAdherence(AdherenceStatus.AdHoc, 0, null);
+
         var now = (nowUtc ?? DateTime.UtcNow).Date;
 
         if (lastCompletedUtc is null)
@@ -42,6 +45,7 @@ public class ScheduleAdherenceService
     {
         return adherence.Status switch
         {
+            AdherenceStatus.AdHoc => "Ad-hoc",
             AdherenceStatus.OnTime => "On time",
             AdherenceStatus.DueSoon when adherence.DaysUntilDue is 1 => "Due tomorrow",
             AdherenceStatus.DueSoon when schedule == Schedule.Monthly && adherence.DaysUntilDue <= 7 => "Due this week",
@@ -57,6 +61,7 @@ public class ScheduleAdherenceService
     {
         return adherence.Status switch
         {
+            AdherenceStatus.AdHoc => "text-bg-secondary",
             AdherenceStatus.OnTime => "text-bg-success",
             AdherenceStatus.DueSoon when adherence.DaysUntilDue is <= 1 => "text-bg-warning",
             AdherenceStatus.DueSoon when adherence.DaysUntilDue is <= 3 => "text-bg-primary",
