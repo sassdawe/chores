@@ -1,7 +1,8 @@
 @page
 @model CompleteModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Mark Chore Done";
+    ViewData["Title"] = T["complete.title"];
 }
 
 <div style="max-width:480px; margin:40px auto; text-align:center;">
@@ -9,25 +10,25 @@
     @if (Model.LastCompletionAdherence is not null)
     {
         var lastCompletionBadgeClass = ScheduleAdherenceService.ToBadgeClass(Model.Chore.Schedule, Model.LastCompletionAdherence);
-        var lastCompletionStatusText = ScheduleAdherenceService.ToDisplayText(Model.Chore.Schedule, Model.LastCompletionAdherence);
+        var lastCompletionStatusText = ScheduleAdherenceService.ToDisplayText(Model.Chore.Schedule, Model.LastCompletionAdherence, T);
 
         <div class="mb-4">
-            <div class="text-muted small mb-2">Last completion status</div>
+            <div class="text-muted small mb-2">@T["complete.lastCompletionStatus"]</div>
             <span class="badge @lastCompletionBadgeClass fs-6">@lastCompletionStatusText</span>
             <div class="text-muted small mt-2">
                 @if (Model.LastCompletedUtc.HasValue)
                 {
-                    <span>Last completed @Model.LastCompletedUtc.Value.ToLocalTime().ToString("g")</span>
+                    <span>@T["complete.lastCompleted"] @Model.LastCompletedUtc.Value.ToLocalTime().ToString("g")</span>
                 }
                 else
                 {
-                    <span>No completion recorded yet.</span>
+                    <span>@T["complete.noCompletionYet"]</span>
                 }
             </div>
         </div>
     }
 
-    <p class="text-muted mb-4">When was this done?</p>
+    <p class="text-muted mb-4">@T["complete.whenDone"]</p>
 
     <form method="post" asp-page-handler="Yesterday" asp-route-id="@Model.Chore.Id">
         @if (Model.LabelId.HasValue)
@@ -44,7 +45,7 @@
         }
         <div class="mb-3">
             <button type="submit" class="btn btn-outline-success btn-lg w-100">
-                Done yesterday
+                @T["complete.doneYesterday"]
             </button>
         </div>
     </form>
@@ -69,8 +70,8 @@
                    class="form-control form-control-lg text-center"
                    style="font-size:1.2rem; touch-action:manipulation;" />
         </div>
-        <button type="submit" class="btn btn-success btn-lg me-2">Mark as done</button>
-        <a href="@Model.BuildDashboardPath()" class="btn btn-outline-secondary btn-lg">Cancel</a>
+        <button type="submit" class="btn btn-success btn-lg me-2">@T["complete.markAsDone"]</button>
+        <a href="@Model.BuildDashboardPath()" class="btn btn-outline-secondary btn-lg">@T["common.cancel"]</a>
     </form>
 
     <hr class="my-4" />
@@ -88,9 +89,9 @@
         {
             <input type="hidden" name="HouseholdIds" value="@householdId" />
         }
-        <p class="text-muted small mb-2">Can't do it right now? Skipping resets the schedule timer.</p>
+        <p class="text-muted small mb-2">@T["complete.skipNote"]</p>
         <button type="submit" class="btn btn-outline-warning btn-lg w-100">
-            ⚠ Skip this chore
+            @T["complete.skip"]
         </button>
     </form>
 </div>
@@ -119,7 +120,7 @@
     })();
 
     document.getElementById('skipForm')?.addEventListener('submit', (e) => {
-        if (!confirm('Skip this chore? The schedule timer will reset from now, but it will be marked as skipped in the history.')) {
+        if (!confirm('@T["complete.skip"]?')) {
             e.preventDefault();
         }
     });

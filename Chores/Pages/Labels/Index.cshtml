@@ -1,26 +1,27 @@
 @page
 @model IndexModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Labels";
+    ViewData["Title"] = T["labels.title"];
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Labels</h2>
-    <a asp-page="Create" class="btn btn-primary btn-sm">+ Add Label</a>
+    <h2>@T["labels.title"]</h2>
+    <a asp-page="Create" class="btn btn-primary btn-sm">@T["labels.addLabel"]</a>
 </div>
 
 @if (!Model.Labels.Any())
 {
-    <p class="text-muted">No labels yet.</p>
+    <p class="text-muted">@T["labels.noLabels"]</p>
 }
 else
 {
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Space</th>
-                <th>Color</th>
+                <th>@T["labels.name"]</th>
+                <th>@T["labels.space"]</th>
+                <th>@T["labels.color"]</th>
                 <th></th>
             </tr>
         </thead>
@@ -35,7 +36,7 @@ else
                     <td>@label.Household.Name</td>
                     <td>@label.Color</td>
                     <td>
-                        <a asp-page="Edit" asp-route-id="@label.Id" class="btn btn-outline-secondary btn-sm">Edit</a>
+                        <a asp-page="Edit" asp-route-id="@label.Id" class="btn btn-outline-secondary btn-sm">@T["common.edit"]</a>
                     </td>
                 </tr>
             }

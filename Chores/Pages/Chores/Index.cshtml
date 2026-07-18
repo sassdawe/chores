@@ -1,7 +1,8 @@
 @page
 @model IndexModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Manage Chores";
+    ViewData["Title"] = T["chores.manageTitle"];
 }
 
 <style>
@@ -10,15 +11,15 @@
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0">Manage Chores</h2>
-    <a href="@Model.BuildCreatePath()" class="btn btn-primary">+ Add Chore</a>
+    <h2 class="mb-0">@T["chores.manageTitle"]</h2>
+    <a href="@Model.BuildCreatePath()" class="btn btn-primary">@T["common.addChore"]</a>
 </div>
 
 @if (Model.AllLabels.Any())
 {
     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
         <a href="@Model.BuildManageChoresPath()"
-           class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">All</a>
+           class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">@T["common.all"]</a>
         @foreach (var label in Model.AllLabels)
         {
             var isActive = Model.ActiveLabelId == label.Id;
@@ -35,25 +36,25 @@
 <div class="row row-cols-2 row-cols-lg-4 g-2 mb-3">
     <div class="col">
         <div class="border rounded-3 p-3 h-100">
-            <div class="text-muted small text-uppercase">Registered</div>
+            <div class="text-muted small text-uppercase">@T["chores.registered"]</div>
             <div class="fs-4 fw-semibold">@Model.TotalChoreCount</div>
         </div>
     </div>
     <div class="col">
         <div class="border rounded-3 p-3 h-100">
-            <div class="text-muted small text-uppercase">On time</div>
+            <div class="text-muted small text-uppercase">@T["chores.onTime"]</div>
             <div class="fs-4 fw-semibold text-success">@Model.OnTimeChoreCount</div>
         </div>
     </div>
     <div class="col">
         <div class="border rounded-3 p-3 h-100">
-            <div class="text-muted small text-uppercase">Never done</div>
+            <div class="text-muted small text-uppercase">@T["chores.neverDone"]</div>
             <div class="fs-4 fw-semibold text-secondary">@Model.NeverDoneChoreCount</div>
         </div>
     </div>
     <div class="col">
         <div class="border rounded-3 p-3 h-100">
-            <div class="text-muted small text-uppercase">Missed target</div>
+            <div class="text-muted small text-uppercase">@T["chores.missedTarget"]</div>
             <div class="fs-4 fw-semibold text-danger">@Model.MissedTargetChoreCount</div>
         </div>
     </div>
@@ -61,16 +62,16 @@
 
 @if (!Model.Chores.Any())
 {
-    <p class="text-muted">No chores yet. Add one to get started.</p>
+    <p class="text-muted">@T["chores.noChores"]</p>
 }
 else
 {
     <table class="table table-hover">
         <thead>
             <tr>
-                <th>Name</th>
-                <th>Space</th>
-                <th>Schedule</th>
+                <th>@T["chores.name"]</th>
+                <th>@T["chores.space"]</th>
+                <th>@T["chores.schedule"]</th>
                 <th></th>
             </tr>
         </thead>
@@ -80,13 +81,14 @@ else
                 <tr>
                     <td>@chore.Name</td>
                     <td>@chore.Household.Name</td>
-                    <td>@chore.Schedule.ToFriendlyLabel()</td>
+                    <td>@chore.Schedule.ToLocalizedLabel(T)</td>
                     <td>
-                        <a href="@Model.BuildHistoryPath(chore.Id)" class="btn btn-sm btn-outline-secondary">History</a>
-                        <a href="@Model.BuildEditPath(chore.Id)" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="@Model.BuildHistoryPath(chore.Id)" class="btn btn-sm btn-outline-secondary">@T["chores.history"]</a>
+                        <a href="@Model.BuildEditPath(chore.Id)" class="btn btn-sm btn-outline-secondary">@T["common.edit"]</a>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
 }
+

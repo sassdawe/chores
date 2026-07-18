@@ -1,14 +1,15 @@
 @page
 @model IndexModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Members";
+    ViewData["Title"] = T["spaces.title"];
 }
 
-<h2 class="mb-3">Spaces</h2>
+<h2 class="mb-3">@T["spaces.title"]</h2>
 
 <div class="row g-4">
     <div class="col-md-5">
-        <h5>Your spaces</h5>
+        <h5>@T["spaces.yourSpaces"]</h5>
         @if (Model.Spaces.Any())
         {
             <div class="list-group mb-3">
@@ -20,7 +21,7 @@
                         @space.Household.Name
                         @if (space.IsOwner)
                         {
-                            <span class="badge text-bg-secondary ms-1">Owner</span>
+                            <span class="badge text-bg-secondary ms-1">@T["spaces.owner"]</span>
                         }
                     </a>
                 }
@@ -28,32 +29,32 @@
         }
         else
         {
-            <p class="text-muted">No spaces found.</p>
+            <p class="text-muted">@T["spaces.noSpaces"]</p>
         }
 
-        <h5>Create a space</h5>
+        <h5>@T["spaces.create"]</h5>
         <form method="post" asp-page-handler="CreateSpace">
             <div class="input-group mb-1">
-                <input name="SpaceName" class="form-control" placeholder="Office, garage, online estate…" value="@Model.SpaceName" />
-                <button type="submit" class="btn btn-primary">Create</button>
+                <input name="SpaceName" class="form-control" placeholder="@T["spaces.spacePlaceholder"]" value="@Model.SpaceName" />
+                <button type="submit" class="btn btn-primary">@T["common.create"]</button>
             </div>
             <span asp-validation-for="SpaceName" class="text-danger"></span>
         </form>
     </div>
 
     <div class="col-md-7">
-        <h5>@(Model.SelectedHouseholdName ?? "Selected space") members</h5>
+        <h5>@(Model.SelectedHouseholdName ?? T["spaces.title"]) @T["spaces.membersOf"]</h5>
 
         @if (Model.CanInviteMembers)
         {
             <form method="post" asp-page-handler="RenameSpace" asp-route-householdId="@Model.SelectedHouseholdId" class="mb-4" style="max-width:400px;">
-                <label for="RenameSpaceName" class="form-label">Space display name</label>
+                <label for="RenameSpaceName" class="form-label">@T["spaces.displayName"]</label>
                 <div class="input-group mb-1">
                     <input id="RenameSpaceName"
                            name="RenameSpaceName"
                            class="form-control"
                            value="@(string.IsNullOrWhiteSpace(Model.RenameSpaceName) ? Model.SelectedHouseholdName : Model.RenameSpaceName)" />
-                    <button type="submit" class="btn btn-outline-primary">Rename</button>
+                    <button type="submit" class="btn btn-outline-primary">@T["spaces.rename"]</button>
                 </div>
                 <span asp-validation-for="RenameSpaceName" class="text-danger"></span>
             </form>
@@ -69,7 +70,7 @@
                             @member.User.LoginName
                             @if (member.IsOwner)
                             {
-                                <span class="badge text-bg-secondary ms-1">Owner</span>
+                                <span class="badge text-bg-secondary ms-1">@T["spaces.owner"]</span>
                             }
                         </li>
                     }
@@ -77,12 +78,12 @@
             }
             else
             {
-                <p class="text-muted">No members found.</p>
+                <p class="text-muted">@T["spaces.noMembers"]</p>
             }
 
             @if (Model.CanInviteMembers)
             {
-                <h5>Invite a member</h5>
+                <h5>@T["spaces.inviteMember"]</h5>
 
                 @if (!string.IsNullOrEmpty(Model.InviteResult))
                 {
@@ -92,18 +93,18 @@
                 <form method="post" asp-page-handler="Invite" asp-route-householdId="@Model.SelectedHouseholdId">
                     <input type="hidden" name="SelectedHouseholdId" value="@Model.SelectedHouseholdId" />
                     <div class="input-group mb-1">
-                        <input name="InviteLoginName" class="form-control" placeholder="Login name" value="@Model.InviteLoginName" />
-                        <button type="submit" class="btn btn-primary">Invite</button>
+                        <input name="InviteLoginName" class="form-control" placeholder="@T["spaces.loginName"]" value="@Model.InviteLoginName" />
+                        <button type="submit" class="btn btn-primary">@T["spaces.invite"]</button>
                     </div>
                     <span asp-validation-for="InviteLoginName" class="text-danger"></span>
                 </form>
                 <p class="text-muted small mt-2 mb-0">
-                    Invites expire after 5 days. If a login name does not exist yet, any invite sent before that person registers is discarded and won’t appear in their profile later.
+                    @T["spaces.inviteExpiry"]
                 </p>
             }
             else
             {
-                <p class="text-muted mb-0">Only a space owner can send invites.</p>
+                <p class="text-muted mb-0">@T["spaces.onlyOwnerInvite"]</p>
             }
         </div>
     </div>

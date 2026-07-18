@@ -14,7 +14,8 @@ namespace Chores.Pages.Profile;
 public class IndexModel(
     AppDbContext db,
     HouseholdInvitationService householdInvitations,
-    HouseholdMembershipService householdMemberships) : PageModel
+    HouseholdMembershipService householdMemberships,
+    UiTranslationService translation) : PageModel
 {
     private static readonly JsonSerializerOptions ExportJsonOptions = new()
     {
@@ -29,8 +30,12 @@ public class IndexModel(
     public bool CanAcceptHouseholdInvites { get; set; }
     [BindProperty]
     public int? ExportHouseholdId { get; set; }
+    [BindProperty]
+    public string? SelectedLocale { get; set; }
     [TempData]
     public string? StatusMessage { get; set; }
+
+    public UiTranslationService Translation => translation;
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -176,7 +181,7 @@ public class IndexModel(
 
         if (user.Credentials.Count <= 1)
         {
-            StatusMessage = "You must keep at least one passkey.";
+            StatusMessage = translation["profile.passkeyMinOneRequired"];
             await LoadAsync();
             return Page();
         }
@@ -188,6 +193,35 @@ public class IndexModel(
             await db.SaveChangesAsync();
         }
 
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostSetLanguageAsync()
+    {
+        var username = User.Identity!.Name!;
+        var user = await db.Users.FirstOrDefaultAsync(u => u.LoginName == username);
+
+        if (user is null)
+            return RedirectToPage("/Auth/Logout");
+
+        var locale = translation.GetEnabledLanguages()
+            .FirstOrDefault(l => string.Equals(l.Code, SelectedLocale, StringComparison.OrdinalIgnoreCase))
+            .Code;
+
+        if (string.IsNullOrEmpty(locale))
+            locale = "en";
+
+        user.PreferredLocale = locale;
+        await db.SaveChangesAsync();
+
+        Response.Cookies.Append(UiTranslationService.CookieName, locale, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Lax,
+            Expires = DateTimeOffset.UtcNow.AddYears(1)
+        });
+
+        StatusMessage = translation["profile.languageSaved"];
         return RedirectToPage();
     }
 
@@ -239,6 +273,7 @@ public class IndexModel(
         CanAcceptHouseholdInvites = await householdInvitations.CanAcceptInvitesAsync(user);
         Spaces = await householdMemberships.GetMembershipsAsync(username);
         ExportHouseholdId ??= Spaces.FirstOrDefault()?.HouseholdId;
+        SelectedLocale ??= user.PreferredLocale ?? "en";
         return true;
     }
 
