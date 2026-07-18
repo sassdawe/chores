@@ -217,6 +217,7 @@ public class IndexModel(
         Response.Cookies.Append(UiTranslationService.CookieName, locale, new CookieOptions
         {
             HttpOnly = true,
+            Secure = true,
             SameSite = SameSiteMode.Lax,
             Expires = DateTimeOffset.UtcNow.AddYears(1)
         });
