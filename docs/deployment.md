@@ -245,6 +245,8 @@ The following languages are bundled with the application and are ready to enable
 | Code | Language |
 |---|---|
 | `en` | English |
+| `de` | Deutsch (German) |
+| `es` | Español (Spanish) |
 | `hu` | Magyar (Hungarian) |
 
 English (`en`) is always the fallback: if a translation key is missing in the active language it is looked up in English, and if it is missing there too the key itself is returned.
