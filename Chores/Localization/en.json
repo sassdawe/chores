@@ -108,6 +108,7 @@
   "complete.lastCompleted": "Last completed",
   "complete.skipNote": "Can't do it right now? Skipping resets the schedule timer.",
   "complete.skip": "⚠ Skip this chore",
+  "complete.skipConfirm": "Skip this chore?",
   "complete.firstCompletion": "First completion",
 
   "history.backToChores": "← Back to chores",

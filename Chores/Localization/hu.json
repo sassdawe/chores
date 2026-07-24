@@ -108,6 +108,7 @@
   "complete.lastCompleted": "Legutóbb elvégezve",
   "complete.skipNote": "Most nem sikerül? Kihagyás esetén az ütemező nulláról indul.",
   "complete.skip": "⚠ Feladat kihagyása",
+  "complete.skipConfirm": "Ki szeretnéd hagyni ezt a feladatot?",
   "complete.firstCompletion": "Első elvégzés",
 
   "history.backToChores": "← Vissza a feladatokhoz",

@@ -120,7 +120,7 @@
     })();
 
     document.getElementById('skipForm')?.addEventListener('submit', (e) => {
-        if (!confirm('@T["complete.skip"]?')) {
+        if (!confirm('@T["complete.skipConfirm"]')) {
             e.preventDefault();
         }
     });
