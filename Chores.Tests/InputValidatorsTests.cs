@@ -21,6 +21,8 @@ public class InputValidatorsTests
     [InlineData("ab")]
     [InlineData("bad name")]
     [InlineData("bad/name")]
+    [InlineData("lost")]
+    [InlineData(" LoSt ")]
     [InlineData("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")]
     public void LoginNameValidator_TryNormalize_RejectsInvalidValues(string input)
     {

@@ -1,0 +1,59 @@
+@page
+@model MoveModel
+@inject UiTranslationService T
+@{
+    ViewData["Title"] = T["chores.moveTitle"];
+}
+
+<div style="max-width:480px;">
+    <h2 class="mb-3">@T["chores.moveTitle"]</h2>
+    <p class="text-muted mb-1">@T["chores.choreName"] @Model.ChoreName</p>
+    <p class="text-muted">@T["chores.spaceColon"] @Model.CurrentHouseholdName</p>
+
+    @if (!Model.DestinationSpaces.Any())
+    {
+        <div class="alert alert-info">@T["chores.moveNoOtherSpaces"]</div>
+        <a href="@Model.BuildEditPath()" class="btn btn-outline-secondary">@T["common.back"]</a>
+    }
+    else if (Model.ShowConfirmation)
+    {
+        <div class="alert alert-warning">
+            <p class="mb-2">@string.Format(T["chores.moveConfirmMessage"], Model.ChoreName, Model.DestinationHouseholdName)</p>
+            <p class="mb-0">@T["chores.moveHistoryNote"]</p>
+        </div>
+
+        <form method="post" asp-page-handler="Start">
+            @if (Model.LabelId.HasValue)
+            {
+                <input type="hidden" asp-for="LabelId" />
+            }
+            <input type="hidden" asp-for="ChoreId" />
+            <input type="hidden" asp-for="DestinationHouseholdId" />
+            <button type="submit" class="btn btn-warning me-2">@T["chores.moveStart"]</button>
+            <a href="@Model.BuildMovePath()" class="btn btn-outline-secondary">@T["common.back"]</a>
+        </form>
+    }
+    else
+    {
+        <form method="post" asp-page-handler="Confirm">
+            @if (Model.LabelId.HasValue)
+            {
+                <input type="hidden" asp-for="LabelId" />
+            }
+            <input type="hidden" asp-for="ChoreId" />
+            <div class="mb-3">
+                <label asp-for="DestinationHouseholdId" class="form-label">@T["chores.moveDestination"]</label>
+                <select asp-for="DestinationHouseholdId" class="form-select">
+                    <option value="">@T["chores.moveSelectPrompt"]</option>
+                    @foreach (var space in Model.DestinationSpaces)
+                    {
+                        <option value="@space.HouseholdId">@space.Household.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="DestinationHouseholdId" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary me-2">@T["chores.moveReview"]</button>
+            <a href="@Model.BuildEditPath()" class="btn btn-outline-secondary">@T["common.cancel"]</a>
+        </form>
+    }
+</div>
