@@ -108,6 +108,8 @@
   "chores.moveNoOtherSpaces": "Sie benötigen Zugriff auf einen weiteren Bereich, bevor diese Aufgabe verschoben werden kann.",
   "chores.moveLabelsTitle": "Etiketten für die verschobene Aufgabe auswählen",
   "chores.moveNoLabelsInDestination": "In diesem Bereich gibt es noch keine Etiketten. Sie können jetzt speichern und später Etiketten hinzufügen.",
+  "chores.moveSelectDifferentSpaceError": "Wählen Sie einen anderen Bereich aus, auf den Sie zugreifen können.",
+  "chores.moveUnableError": "Diese Aufgabe konnte nicht verschoben werden.",
   "chores.spaceColon": "Bereich:",
 
   "complete.title": "Aufgabe als erledigt markieren",

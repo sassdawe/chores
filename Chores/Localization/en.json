@@ -108,6 +108,8 @@
   "chores.moveNoOtherSpaces": "You need access to another space before this chore can be moved.",
   "chores.moveLabelsTitle": "Choose labels for the moved chore",
   "chores.moveNoLabelsInDestination": "No labels exist in this space yet. You can save now and add labels later.",
+  "chores.moveSelectDifferentSpaceError": "Select a different space you can access.",
+  "chores.moveUnableError": "Unable to move this chore.",
   "chores.spaceColon": "Space:",
 
   "complete.title": "Mark Chore Done",

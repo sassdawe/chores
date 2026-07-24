@@ -8,6 +8,10 @@ public class ChoreMoveService(AppDbContext db)
 {
     public async Task<bool> TryMoveAsync(int choreId, int destinationHouseholdId, CancellationToken cancellationToken = default)
     {
+        await using var transaction = db.Database.IsRelational()
+            ? await db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
         var chore = await db.Chores
             .Include(candidate => candidate.Labels)
             .FirstOrDefaultAsync(candidate => candidate.Id == choreId, cancellationToken);
@@ -37,16 +41,28 @@ public class ChoreMoveService(AppDbContext db)
             .ToListAsync(cancellationToken);
 
         AppUser? lostPlaceholder = null;
-        foreach (var completionRecord in completionRecords)
+        if (completionRecords.Count > 0)
         {
-            lostPlaceholder ??= await GetLostPlaceholderAsync(cancellationToken);
-            completionRecord.CompletedByUserId = lostPlaceholder.Id;
+            lostPlaceholder = await GetLostPlaceholderAsync(cancellationToken);
+        }
+
+        if (lostPlaceholder is not null)
+        {
+            foreach (var completionRecord in completionRecords)
+            {
+                completionRecord.CompletedByUserId = lostPlaceholder.Id;
+            }
         }
 
         chore.HouseholdId = destinationHouseholdId;
         chore.Labels.Clear();
 
         await db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
         return true;
     }
 

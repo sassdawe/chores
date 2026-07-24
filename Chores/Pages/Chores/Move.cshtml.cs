@@ -14,7 +14,8 @@ namespace Chores.Pages.Chores;
 public class MoveModel(
     AppDbContext db,
     HouseholdMembershipService householdMemberships,
-    ChoreMoveService choreMoveService) : PageModel
+    ChoreMoveService choreMoveService,
+    UiTranslationService translationService) : PageModel
 {
     [BindProperty]
     public int ChoreId { get; set; }
@@ -63,14 +64,14 @@ public class MoveModel(
         var destinationSpace = destinationSpaces.FirstOrDefault(space => space.HouseholdId == DestinationHouseholdId);
         if (destinationSpace is null)
         {
-            ModelState.AddModelError(nameof(DestinationHouseholdId), "Select a space you can access.");
+            ModelState.AddModelError(nameof(DestinationHouseholdId), translationService["chores.moveSelectDifferentSpaceError"]);
             return await LoadPageAsync(ChoreId, null, showConfirmation: false);
         }
 
         var moved = await choreMoveService.TryMoveAsync(ChoreId, destinationSpace.HouseholdId);
         if (!moved)
         {
-            ModelState.AddModelError(string.Empty, "Unable to move this chore.");
+            ModelState.AddModelError(string.Empty, translationService["chores.moveUnableError"]);
             return await LoadPageAsync(ChoreId, destinationSpace.HouseholdId, showConfirmation: true);
         }
 
@@ -142,7 +143,7 @@ public class MoveModel(
 
         if (showConfirmation && DestinationHouseholdName is null)
         {
-            ModelState.AddModelError(nameof(DestinationHouseholdId), "Select a different space you can access.");
+            ModelState.AddModelError(nameof(DestinationHouseholdId), translationService["chores.moveSelectDifferentSpaceError"]);
         }
 
         return Page();

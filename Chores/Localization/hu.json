@@ -108,6 +108,8 @@
   "chores.moveNoOtherSpaces": "A feladat áthelyezéséhez hozzá kell férnie egy másik térhez is.",
   "chores.moveLabelsTitle": "Válassz címkéket az áthelyezett feladathoz",
   "chores.moveNoLabelsInDestination": "Ebben a térben még nincsenek címkék. Most menthetsz, és később is adhatsz hozzá címkéket.",
+  "chores.moveSelectDifferentSpaceError": "Válassz egy másik teret, amelyhez hozzáférsz.",
+  "chores.moveUnableError": "A feladatot nem sikerült áthelyezni.",
   "chores.spaceColon": "Tér:",
 
   "complete.title": "Feladat elvégzettnek jelölése",

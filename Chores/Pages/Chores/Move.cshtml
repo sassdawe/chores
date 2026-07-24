@@ -23,6 +23,7 @@
         </div>
 
         <form method="post" asp-page-handler="Start">
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
             @if (Model.LabelId.HasValue)
             {
                 <input type="hidden" asp-for="LabelId" />
@@ -36,6 +37,7 @@
     else
     {
         <form method="post" asp-page-handler="Confirm">
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
             @if (Model.LabelId.HasValue)
             {
                 <input type="hidden" asp-for="LabelId" />

@@ -108,6 +108,8 @@
   "chores.moveNoOtherSpaces": "Necesita acceso a otro espacio antes de poder mover esta tarea.",
   "chores.moveLabelsTitle": "Elegir etiquetas para la tarea movida",
   "chores.moveNoLabelsInDestination": "Todavía no hay etiquetas en este espacio. Puede guardar ahora y agregar etiquetas más tarde.",
+  "chores.moveSelectDifferentSpaceError": "Seleccione un espacio diferente al que pueda acceder.",
+  "chores.moveUnableError": "No se pudo mover esta tarea.",
   "chores.spaceColon": "Espacio:",
 
   "complete.title": "Marcar tarea como realizada",
