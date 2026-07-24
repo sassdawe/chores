@@ -40,11 +40,10 @@ public static class ScheduleExtensions
     };
 
     /// <summary>
-    /// Returns the schedule label translated via the provided <see cref="Services.UiTranslationService"/>.
+    /// Returns the schedule label translated via the provided <see cref="Chores.Services.UiTranslationService"/>.
     /// Falls back to <see cref="ToFriendlyLabel"/> if the service is null.
     /// </summary>
-    public static string ToLocalizedLabel(this Schedule schedule, Services.UiTranslationService? t)
-    {
+    public static string ToLocalizedLabel(this Schedule schedule, Chores.Services.UiTranslationService? t)
         if (t is null)
             return schedule.ToFriendlyLabel();
 
