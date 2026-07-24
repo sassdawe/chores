@@ -32,19 +32,15 @@ public class ChoreMoveService(AppDbContext db)
             .ToHashSet();
 
         var completionRecords = await db.CompletionRecords
-            .Where(record => record.ChoreId == choreId)
+            .Where(record => record.ChoreId == choreId
+                && !destinationUserIds.Contains(record.CompletedByUserId))
             .ToListAsync(cancellationToken);
 
         AppUser? lostPlaceholder = null;
         foreach (var completionRecord in completionRecords)
         {
-            if (destinationUserIds.Contains(completionRecord.CompletedByUserId))
-            {
-                continue;
-            }
-
             lostPlaceholder ??= await GetLostPlaceholderAsync(cancellationToken);
-            completionRecord.CompletedByUser = lostPlaceholder;
+            completionRecord.CompletedByUserId = lostPlaceholder.Id;
         }
 
         chore.HouseholdId = destinationHouseholdId;
@@ -69,6 +65,7 @@ public class ChoreMoveService(AppDbContext db)
         };
 
         db.Users.Add(lostPlaceholder);
+        await db.SaveChangesAsync(cancellationToken);
         return lostPlaceholder;
     }
 }

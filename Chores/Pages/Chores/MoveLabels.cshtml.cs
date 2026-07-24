@@ -31,6 +31,7 @@ public class MoveLabelsModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
+        var loginName = User.Identity!.Name;
         var chore = await db.Chores
             .Include(candidate => candidate.Labels)
             .Include(candidate => candidate.Household)
@@ -40,7 +41,7 @@ public class MoveLabelsModel(
             return NotFound();
         }
 
-        if (!await householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId))
+        if (!await householdMemberships.CanAccessHouseholdAsync(loginName, chore.HouseholdId))
         {
             return NotFound();
         }
@@ -69,6 +70,7 @@ public class MoveLabelsModel(
 
     private async Task<IActionResult> LoadPageAsync(int choreId)
     {
+        var loginName = User.Identity!.Name;
         var chore = await db.Chores
             .Include(candidate => candidate.Labels)
             .Include(candidate => candidate.Household)
@@ -78,7 +80,7 @@ public class MoveLabelsModel(
             return NotFound();
         }
 
-        if (!await householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId))
+        if (!await householdMemberships.CanAccessHouseholdAsync(loginName, chore.HouseholdId))
         {
             return NotFound();
         }

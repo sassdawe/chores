@@ -43,6 +43,7 @@ public class MoveModel(
 
     public async Task<IActionResult> OnPostStartAsync()
     {
+        var loginName = User.Identity!.Name;
         var chore = await db.Chores
             .Include(candidate => candidate.Household)
             .FirstOrDefaultAsync(candidate => candidate.Id == ChoreId);
@@ -51,12 +52,12 @@ public class MoveModel(
             return NotFound();
         }
 
-        if (!await householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId))
+        if (!await householdMemberships.CanAccessHouseholdAsync(loginName, chore.HouseholdId))
         {
             return NotFound();
         }
 
-        var destinationSpaces = (await householdMemberships.GetMembershipsAsync(User.Identity!.Name))
+        var destinationSpaces = (await householdMemberships.GetMembershipsAsync(loginName))
             .Where(space => space.HouseholdId != chore.HouseholdId)
             .ToList();
         var destinationSpace = destinationSpaces.FirstOrDefault(space => space.HouseholdId == DestinationHouseholdId);
@@ -108,6 +109,7 @@ public class MoveModel(
 
     private async Task<IActionResult> LoadPageAsync(int choreId, int? destinationHouseholdId, bool showConfirmation)
     {
+        var loginName = User.Identity!.Name;
         var chore = await db.Chores
             .Include(candidate => candidate.Household)
             .FirstOrDefaultAsync(candidate => candidate.Id == choreId);
@@ -116,7 +118,7 @@ public class MoveModel(
             return NotFound();
         }
 
-        if (!await householdMemberships.CanAccessHouseholdAsync(User.Identity!.Name, chore.HouseholdId))
+        if (!await householdMemberships.CanAccessHouseholdAsync(loginName, chore.HouseholdId))
         {
             return NotFound();
         }
@@ -124,7 +126,7 @@ public class MoveModel(
         ChoreId = chore.Id;
         ChoreName = chore.Name;
         CurrentHouseholdName = chore.Household.Name;
-        DestinationSpaces = (await householdMemberships.GetMembershipsAsync(User.Identity!.Name))
+        DestinationSpaces = (await householdMemberships.GetMembershipsAsync(loginName))
             .Where(space => space.HouseholdId != chore.HouseholdId)
             .ToList();
 
