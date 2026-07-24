@@ -194,20 +194,40 @@ The UI language is controlled by a combination of an environment variable (which
 
 ### Enabling languages
 
-Set the `Localization:EnabledLanguages` environment variable to a comma-separated list of language codes. Only languages whose code appears in this list will be shown in the language selector on the Profile page. When exactly one language is enabled the selector is hidden.
+Set `Localization:EnabledLanguages` to a comma-separated list of language codes. Only languages whose code appears in this list will be shown in the language selector on the Profile page. When exactly one language is enabled the selector is hidden.
 
-| Variable | Default | Description |
+| Setting | Default | Description |
 |---|---|---|
 | `Localization:EnabledLanguages` | `en` | Comma-separated list of BCP 47-style language codes to make available in the UI (e.g. `en,hu`). |
 
-Docker Compose example:
+**`appsettings.Development.json`** (local development — already included in the repo):
+
+```json
+{
+  "Localization": {
+    "EnabledLanguages": "en,hu"
+  }
+}
+```
+
+**`appsettings.json`** (self-hosted without Docker):
+
+```json
+{
+  "Localization": {
+    "EnabledLanguages": "en,hu"
+  }
+}
+```
+
+**Docker Compose** (environment variable — double underscore separator):
 
 ```yaml
 environment:
-  - Localization:EnabledLanguages=en,hu
+  - Localization__EnabledLanguages=en,hu
 ```
 
-Azure App Service example:
+**Azure App Service** (app setting — double underscore separator):
 
 ```sh
 az webapp config appsettings set \
@@ -215,6 +235,8 @@ az webapp config appsettings set \
   --resource-group <resource-group> \
   --settings Localization__EnabledLanguages="en,hu"
 ```
+
+> **Note:** JSON config files use a nested object with a colon path (`Localization` → `EnabledLanguages`), while environment variables use a double-underscore separator (`Localization__EnabledLanguages`). Both map to the same setting.
 
 ### Built-in languages
 
