@@ -57,7 +57,7 @@ public class ScheduleAdherenceService
         };
     }
 
-    public static string ToDisplayText(Schedule schedule, ScheduleAdherence adherence, Services.UiTranslationService? t)
+    public static string ToDisplayText(Schedule schedule, ScheduleAdherence adherence, UiTranslationService? t)
     {
         if (t is null)
             return ToDisplayText(schedule, adherence);
