@@ -44,6 +44,7 @@ public static class ScheduleExtensions
     /// Falls back to <see cref="ToFriendlyLabel"/> if the service is null.
     /// </summary>
     public static string ToLocalizedLabel(this Schedule schedule, Chores.Services.UiTranslationService? t)
+    {
         if (t is null)
             return schedule.ToFriendlyLabel();
 
