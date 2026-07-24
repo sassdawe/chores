@@ -1,15 +1,16 @@
 @page
 @model CreateModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Add Label";
+    ViewData["Title"] = T["labels.addTitle"];
 }
 
 <div style="max-width:480px;">
-    <h2 class="mb-3">Add Label</h2>
+    <h2 class="mb-3">@T["labels.addTitle"]</h2>
 
     <form method="post">
         <div class="mb-3">
-            <label for="HouseholdId" class="form-label">Space</label>
+            <label for="HouseholdId" class="form-label">@T["labels.space"]</label>
             <select id="HouseholdId" name="HouseholdId" class="form-select">
                 @foreach (var space in Model.Spaces)
                 {
@@ -20,15 +21,15 @@
             </select>
         </div>
         <div class="mb-3">
-            <label for="Name" class="form-label">Name</label>
+            <label for="Name" class="form-label">@T["labels.name"]</label>
             <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
             <span asp-validation-for="Name" class="text-danger"></span>
         </div>
         <div class="mb-3">
-            <label for="Color" class="form-label">Color</label>
+            <label for="Color" class="form-label">@T["labels.color"]</label>
             <input id="Color" name="Color" type="color" class="form-control form-control-color" value="@Model.Color" />
         </div>
-        <button type="submit" class="btn btn-primary me-2">Save</button>
-        <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary me-2">@T["common.save"]</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">@T["common.cancel"]</a>
     </form>
 </div>

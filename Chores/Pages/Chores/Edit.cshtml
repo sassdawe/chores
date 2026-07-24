@@ -1,14 +1,15 @@
 @page
 @model EditModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Edit Chore";
+    ViewData["Title"] = T["chores.editTitle"];
 }
 
 <div style="max-width:480px;">
-    <h2 class="mb-3">Edit Chore</h2>
+    <h2 class="mb-3">@T["chores.editTitle"]</h2>
     @if (!string.IsNullOrEmpty(Model.HouseholdName))
     {
-        <p class="text-muted">Space: @Model.HouseholdName</p>
+        <p class="text-muted">@T["chores.spaceColon"] @Model.HouseholdName</p>
     }
 
     <form method="post">
@@ -18,21 +19,21 @@
         }
         <input type="hidden" name="ChoreId" value="@Model.ChoreId" />
         <div class="mb-3">
-            <label for="Name" class="form-label">Chore name</label>
+            <label for="Name" class="form-label">@T["chores.choreName"]</label>
             <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
             <span asp-validation-for="Name" class="text-danger"></span>
         </div>
         <div class="mb-3">
-            <label for="Schedule" class="form-label">Schedule</label>
+            <label for="Schedule" class="form-label">@T["chores.schedule"]</label>
             <select id="Schedule" name="Schedule" class="form-select">
                 @foreach (var s in ScheduleExtensions.GetSelectableSchedules())
                 {
-                    <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToFriendlyLabel()</option>
+                    <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToLocalizedLabel(T)</option>
                 }
             </select>
         </div>
         <div class="mb-3">
-            <label class="form-label">Labels</label>
+            <label class="form-label">@T["chores.labels"]</label>
             @if (Model.AvailableLabels.Any())
             {
                 <div class="d-flex flex-wrap gap-2">
@@ -48,10 +49,10 @@
             }
             else
             {
-                <p class="text-muted small">No labels yet. <a asp-page="/Labels/Create">Create one</a></p>
+                <p class="text-muted small">@T["chores.noLabels"] <a asp-page="/Labels/Create">@T["chores.createLabel"]</a></p>
             }
         </div>
-        <button type="submit" class="btn btn-primary me-2">Save</button>
-        <a href="@Model.BuildManageChoresPath()" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary me-2">@T["common.save"]</button>
+        <a href="@Model.BuildManageChoresPath()" class="btn btn-outline-secondary">@T["common.cancel"]</a>
     </form>
 </div>

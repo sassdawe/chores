@@ -1,7 +1,8 @@
 ﻿@page
 @model IndexModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Chore Dashboard";
+    ViewData["Title"] = T["chores.dashboard"];
 }
 
 <style>
@@ -43,12 +44,12 @@
             }
             <div class="dropdown" data-bs-auto-close="outside">
                 <button class="btn btn-outline-secondary dropdown-toggle dashboard-space-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="text-body-secondary">Spaces:</span>
+                    <span class="text-body-secondary">@T["chores.spaces"]</span>
                     <span class="dashboard-space-summary fw-semibold">@Model.SelectedSpacesSummary</span>
                 </button>
                 <div class="dropdown-menu p-3 dashboard-space-menu">
                     <fieldset class="mb-0">
-                        <legend class="visually-hidden">Filter chores by space</legend>
+                        <legend class="visually-hidden">@T["chores.filterBySpace"]</legend>
                         <div class="dashboard-space-options">
                             @foreach (var space in Model.Spaces)
                             {
@@ -66,8 +67,8 @@
                         </div>
                     </fieldset>
                     <div class="dashboard-space-actions mt-3">
-                        <a class="btn btn-sm btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId)">All spaces</a>
-                        <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                        <a class="btn btn-sm btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId)">@T["common.allSpaces"]</a>
+                        <button type="submit" class="btn btn-sm btn-primary">@T["common.apply"]</button>
                     </div>
                 </div>
             </div>
@@ -80,9 +81,9 @@
 
     <div class="dashboard-filter-actions">
         <a class="btn btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId, Model.GetNextSortMode())" title="Switch sorting mode">
-            Sort: @Model.ActiveSortModeLabel
+            @T["common.sort"]: @Model.ActiveSortModeLabel
         </a>
-        <a class="btn btn-primary" href="@Model.BuildCreateChorePath()">+ Add Chore</a>
+        <a class="btn btn-primary" href="@Model.BuildCreateChorePath()">@T["common.addChore"]</a>
     </div>
 </div>
 
@@ -90,7 +91,7 @@
 {
     <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
           <a href="@Model.BuildDashboardPath()"
-              class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">All</a>
+              class="badge filter-chip @(Model.ActiveLabelId == null ? "filter-chip-active" : string.Empty)">@T["common.all"]</a>
         @foreach (var label in Model.AllLabels)
         {
             var isActive = Model.ActiveLabelId == label.Id;
@@ -106,7 +107,7 @@
 
 @if (!Model.ChoreStatuses.Any())
 {
-    <p class="text-muted">No chores yet. <a asp-page="/Chores/Index">Add some chores</a> to get started.</p>
+    <p class="text-muted">@T["chores.noChores"] <a asp-page="/Chores/Index">@T["chores.addSomeChores"]</a> @T["chores.toGetStarted"]</p>
 }
 else
 {
@@ -130,7 +131,7 @@ else
                     </span>
                     @{
                         var badgeClass = ScheduleAdherenceService.ToBadgeClass(cs.Chore.Schedule, cs.Adherence);
-                        var badgeText = ScheduleAdherenceService.ToDisplayText(cs.Chore.Schedule, cs.Adherence);
+                        var badgeText = ScheduleAdherenceService.ToDisplayText(cs.Chore.Schedule, cs.Adherence, T);
                     }
                     <span class="badge @badgeClass">@badgeText</span>
                 </a>

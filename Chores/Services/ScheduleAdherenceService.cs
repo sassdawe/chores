@@ -57,6 +57,25 @@ public class ScheduleAdherenceService
         };
     }
 
+    public static string ToDisplayText(Schedule schedule, ScheduleAdherence adherence, UiTranslationService? t)
+    {
+        if (t is null)
+            return ToDisplayText(schedule, adherence);
+
+        return adherence.Status switch
+        {
+            AdherenceStatus.AdHoc => t["adherence.adHoc"],
+            AdherenceStatus.OnTime => t["adherence.onTime"],
+            AdherenceStatus.DueSoon when adherence.DaysUntilDue is 1 => t["adherence.dueTomorrow"],
+            AdherenceStatus.DueSoon when schedule == Schedule.Monthly && adherence.DaysUntilDue <= 7 => t["adherence.dueThisWeek"],
+            AdherenceStatus.DueSoon when adherence.DaysUntilDue is > 1 => string.Format(t["adherence.dueInDays"], adherence.DaysUntilDue),
+            AdherenceStatus.DueToday => t["adherence.dueToday"],
+            AdherenceStatus.Overdue when adherence.DaysOverdue == int.MaxValue => t["adherence.neverDone"],
+            AdherenceStatus.Overdue => string.Format(t["adherence.daysOverdue"], adherence.DaysOverdue),
+            _ => t["adherence.onTime"]
+        };
+    }
+
     public static string ToBadgeClass(Schedule schedule, ScheduleAdherence adherence)
     {
         return adherence.Status switch

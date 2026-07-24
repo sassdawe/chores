@@ -85,7 +85,7 @@ public class CompleteModelTests
         var markup = File.ReadAllText(pagePath);
 
         Assert.Contains("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model.Chore.Id\">", markup);
-        Assert.Contains("Done yesterday", markup);
+        Assert.Contains("complete.doneYesterday", markup);
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class CompleteModelTests
         var markup = File.ReadAllText(pagePath);
 
         Assert.Contains("asp-page-handler=\"Skip\"", markup);
-        Assert.Contains("Skip this chore", markup);
+        Assert.Contains("complete.skip", markup);
     }
 
     [Fact]

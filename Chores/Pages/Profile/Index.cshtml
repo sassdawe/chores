@@ -1,25 +1,47 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "My Profile";
+    ViewData["Title"] = Model.Translation["profile.title"];
+    var T = Model.Translation;
+    var enabledLanguages = T.GetEnabledLanguages();
 }
 
-<h2>My Profile</h2>
-<p>Signed in as: <strong>@Model.CurrentUser.LoginName</strong></p>
+<h2>@T["profile.title"]</h2>
+<p>@T["profile.signedInAs"] <strong>@Model.CurrentUser.LoginName</strong></p>
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
     <div class="alert alert-info py-2" style="max-width:680px">@Model.StatusMessage</div>
 }
 
+@if (enabledLanguages.Count > 1)
+{
+    <div class="mb-4">
+        <h4>@T["profile.language"]</h4>
+        <form method="post" asp-page-handler="SetLanguage" class="d-flex gap-2 align-items-end flex-wrap" style="max-width:400px">
+            @Html.AntiForgeryToken()
+            <div class="flex-grow-1">
+                <label for="SelectedLocale" class="form-label visually-hidden">@T["profile.language"]</label>
+                <select id="SelectedLocale" name="SelectedLocale" class="form-select">
+                    @foreach (var (code, name) in enabledLanguages)
+                    {
+                        <option value="@code" selected="@(code == (Model.SelectedLocale ?? "en") ? "selected" : null)">@name</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">@T["common.save"]</button>
+        </form>
+    </div>
+}
+
 <div class="mb-4">
-    <h4>Export data</h4>
+    <h4>@T["profile.exportData"]</h4>
     @if (Model.Spaces.Any())
     {
         <div class="d-flex gap-2 flex-wrap">
             <form method="post" asp-page-handler="Export" class="d-flex gap-2 align-items-end flex-wrap">
                 @Html.AntiForgeryToken()
                 <div>
-                    <label for="FullExportHouseholdId" class="form-label">Space</label>
+                    <label for="FullExportHouseholdId" class="form-label">@T["profile.exportSpace"]</label>
                     <select id="FullExportHouseholdId" name="ExportHouseholdId" class="form-select">
                         @foreach (var space in Model.Spaces)
                         {
@@ -29,12 +51,12 @@
                         }
                     </select>
                 </div>
-                <button type="submit" class="btn btn-outline-primary">Export household data (JSON)</button>
+                <button type="submit" class="btn btn-outline-primary">@T["profile.exportHousehold"]</button>
             </form>
             <form method="post" asp-page-handler="ChoreListExport" class="d-flex gap-2 align-items-end flex-wrap">
                 @Html.AntiForgeryToken()
                 <div>
-                    <label for="ChoreListExportHouseholdId" class="form-label">Space</label>
+                    <label for="ChoreListExportHouseholdId" class="form-label">@T["profile.exportSpace"]</label>
                     <select id="ChoreListExportHouseholdId" name="ExportHouseholdId" class="form-select">
                         @foreach (var space in Model.Spaces)
                         {
@@ -44,23 +66,23 @@
                         }
                     </select>
                 </div>
-                <button type="submit" class="btn btn-outline-secondary">Export chore names and schedules (JSON)</button>
+                <button type="submit" class="btn btn-outline-secondary">@T["profile.exportChoreList"]</button>
             </form>
         </div>
     }
     else
     {
-        <p class="text-muted mb-0">Create a space before exporting chore data.</p>
+        <p class="text-muted mb-0">@T["profile.createSpaceFirst"]</p>
     }
 </div>
 
-<h4>Passkeys</h4>
+<h4>@T["profile.passkeys"]</h4>
 <table class="table table-sm" style="max-width:680px">
     <thead>
         <tr>
-            <th>Name</th>
-            <th>Registered</th>
-            <th>Actions</th>
+            <th>@T["profile.passkeyName"]</th>
+            <th>@T["profile.passkeyRegistered"]</th>
+            <th>@T["profile.passkeyActions"]</th>
         </tr>
     </thead>
     <tbody>
@@ -75,7 +97,7 @@
                                style="max-width:200px"
                                value="@(pk.Nickname ?? string.Empty)"
                                placeholder="@pk.RegDate.ToLocalTime().ToString("MMM d, yyyy HH:mm")" />
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">@T["common.save"]</button>
                     </form>
                 </td>
                 <td class="align-middle text-nowrap">@pk.RegDate.ToLocalTime().ToString("MMM d, yyyy HH:mm")</td>
@@ -83,13 +105,13 @@
                     @if (Model.Passkeys.Count == 1)
                     {
                         <button class="btn btn-sm btn-outline-danger" disabled
-                                title="You must keep at least one passkey">Delete</button>
+                                title="@T["profile.passkeyMinOneRequired"]">@T["profile.passkeyDelete"]</button>
                     }
                     else
                     {
                         <form method="post" asp-page-handler="Delete" asp-route-credentialId="@pk.Id" style="display:inline">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            <button type="submit" class="btn btn-sm btn-outline-danger">@T["profile.passkeyDelete"]</button>
                         </form>
                     }
                 </td>
@@ -98,19 +120,19 @@
     </tbody>
 </table>
 
-<button id="addPasskeyBtn" class="btn btn-primary mt-2">+ Add passkey</button>
+<button id="addPasskeyBtn" class="btn btn-primary mt-2">@T["profile.passkeyAddNew"]</button>
 <p id="passkeyMessage" class="mt-2" style="display:none"></p>
 
 @if (Model.PendingInvites.Any())
 {
-    <h4 class="mt-4">Pending space invites</h4>
+    <h4 class="mt-4">@T["profile.pendingInvites"]</h4>
     <table class="table table-sm" style="max-width:680px">
         <thead>
             <tr>
-                <th>Space</th>
-                <th>Invited by</th>
-                <th>Sent</th>
-                <th>Actions</th>
+                <th>@T["profile.inviteSpace"]</th>
+                <th>@T["profile.inviteInvitedBy"]</th>
+                <th>@T["profile.inviteSent"]</th>
+                <th>@T["profile.inviteActions"]</th>
             </tr>
         </thead>
         <tbody>
@@ -124,20 +146,20 @@
                         @if (!Model.CanAcceptHouseholdInvites)
                         {
                             <button class="btn btn-sm btn-outline-secondary" disabled
-                                    title="You can't accept invites yet — register a passkey first.">
-                                Accept
+                                    title="@T["profile.inviteCannotAccept"]">
+                                @T["profile.inviteAccept"]
                             </button>
                         }
                         else
                         {
                             <form method="post" asp-page-handler="AcceptInvite" asp-route-inviteId="@invite.Id" style="display:inline">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-sm btn-primary">Accept</button>
+                                <button type="submit" class="btn btn-sm btn-primary">@T["profile.inviteAccept"]</button>
                             </form>
                         }
                         <form method="post" asp-page-handler="DeclineInvite" asp-route-inviteId="@invite.Id" style="display:inline">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Decline</button>
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">@T["profile.inviteDecline"]</button>
                         </form>
                     </td>
                 </tr>

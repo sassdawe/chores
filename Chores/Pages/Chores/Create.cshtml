@@ -1,8 +1,9 @@
 @page
 @model CreateModel
+@inject UiTranslationService T
 @using System.Text.Json
 @{
-    ViewData["Title"] = "Add Chore";
+    ViewData["Title"] = T["chores.addTitle"];
     var labelsJson = JsonSerializer.Serialize(Model.AllAvailableLabels.Select(label => new
     {
         id = label.Id,
@@ -15,13 +16,13 @@
 }
 
 <div style="max-width:480px;">
-    <h2 class="mb-3">Add Chore</h2>
+    <h2 class="mb-3">@T["chores.addTitle"]</h2>
 
     @if (!Model.Spaces.Any())
     {
         <div class="alert alert-info">
-            Create a space before adding chores.
-            <a asp-page="/Members/Index">Manage spaces</a>
+            @T["chores.noSpaces"]
+            <a asp-page="/Members/Index">@T["chores.manageSpaces"]</a>
         </div>
     }
     else
@@ -32,7 +33,7 @@
                 <input type="hidden" asp-for="LabelId" />
             }
             <div class="mb-3">
-                <label for="HouseholdId" class="form-label">Space</label>
+                <label for="HouseholdId" class="form-label">@T["chores.space"]</label>
                 <select id="HouseholdId" name="HouseholdId" class="form-select">
                     @foreach (var space in Model.Spaces)
                     {
@@ -44,21 +45,21 @@
                 <span asp-validation-for="HouseholdId" class="text-danger"></span>
             </div>
             <div class="mb-3">
-                <label for="Name" class="form-label">Chore name</label>
+                <label for="Name" class="form-label">@T["chores.choreName"]</label>
                 <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
                 <span asp-validation-for="Name" class="text-danger"></span>
             </div>
             <div class="mb-3">
-                <label for="Schedule" class="form-label">Schedule</label>
+                <label for="Schedule" class="form-label">@T["chores.schedule"]</label>
                 <select id="Schedule" name="Schedule" class="form-select">
                     @foreach (var s in ScheduleExtensions.GetSelectableSchedules())
                     {
-                        <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToFriendlyLabel()</option>
+                        <option value="@s" selected="@(s == Model.Schedule ? "selected" : null)">@s.ToLocalizedLabel(T)</option>
                     }
                 </select>
             </div>
             <div class="mb-3">
-                <label class="form-label">Labels</label>
+                <label class="form-label">@T["chores.labels"]</label>
                 <div id="labelsContainer" class="d-flex flex-wrap gap-2">
                     @foreach (var label in Model.AvailableLabels)
                     {
@@ -70,11 +71,11 @@
                     }
                 </div>
                 <p id="noLabelsMessage" class="text-muted small @(Model.AvailableLabels.Any() ? "d-none" : null)">
-                    No labels yet. <a id="createLabelLink" asp-page="/Labels/Create" asp-route-householdId="@Model.HouseholdId">Create one</a>
+                    @T["chores.noLabels"] <a id="createLabelLink" asp-page="/Labels/Create" asp-route-householdId="@Model.HouseholdId">@T["chores.createLabel"]</a>
                 </p>
             </div>
-            <button type="submit" class="btn btn-primary me-2">Save</button>
-            <a href="@Model.BuildManageChoresPath()" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary me-2">@T["common.save"]</button>
+            <a href="@Model.BuildManageChoresPath()" class="btn btn-outline-secondary">@T["common.cancel"]</a>
         </form>
     }
 </div>

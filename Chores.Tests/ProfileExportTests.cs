@@ -52,7 +52,7 @@ public class ProfileExportTests
         db.CompletionRecords.Add(completion);
         await db.SaveChangesAsync();
 
-        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db), CreateTranslationService())
         {
             PageContext = new PageContext
             {
@@ -137,7 +137,7 @@ public class ProfileExportTests
         });
         await db.SaveChangesAsync();
 
-        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db), CreateTranslationService())
         {
             PageContext = new PageContext
             {
@@ -201,7 +201,7 @@ public class ProfileExportTests
         db.Chores.Add(chore);
         await db.SaveChangesAsync();
 
-        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db), CreateTranslationService())
         {
             PageContext = new PageContext
             {
@@ -259,7 +259,7 @@ public class ProfileExportTests
         db.Chores.AddRange(defaultChore, selectedChore);
         await db.SaveChangesAsync();
 
-        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db))
+        var model = new IndexModel(db, new HouseholdInvitationService(db), new HouseholdMembershipService(db), CreateTranslationService())
         {
             ExportHouseholdId = selectedHousehold.Id,
             PageContext = new PageContext
@@ -300,5 +300,31 @@ public class ProfileExportTests
             .Options;
 
         return new AppDbContext(options);
+    }
+
+    private static UiTranslationService CreateTranslationService()
+    {
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build();
+        var env = new TestWebHostEnvironment();
+        var store = new TranslationStore(config, env);
+        return new UiTranslationService(store, new HttpContextAccessor());
+    }
+
+    private sealed class TestWebHostEnvironment : Microsoft.AspNetCore.Hosting.IWebHostEnvironment
+    {
+        public string ApplicationName { get => "Test"; set { } }
+        public Microsoft.Extensions.FileProviders.IFileProvider WebRootFileProvider
+        {
+            get => new Microsoft.Extensions.FileProviders.NullFileProvider();
+            set { }
+        }
+        public string WebRootPath { get => string.Empty; set { } }
+        public string EnvironmentName { get => "Test"; set { } }
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider
+        {
+            get => new Microsoft.Extensions.FileProviders.NullFileProvider();
+            set { }
+        }
+        public string ContentRootPath { get => Path.GetTempPath(); set { } }
     }
 }

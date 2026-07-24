@@ -24,6 +24,11 @@ builder.Services.AddScoped<ScheduleAdherenceService>();
 builder.Services.AddScoped<HouseholdInvitationService>();
 builder.Services.AddScoped<HouseholdMembershipService>();
 
+// Localization: singleton store + scoped per-request service
+builder.Services.AddSingleton<TranslationStore>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<UiTranslationService>();
+
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(opt =>
 {

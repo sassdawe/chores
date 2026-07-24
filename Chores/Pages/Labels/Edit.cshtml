@@ -1,28 +1,29 @@
 @page
 @model EditModel
+@inject UiTranslationService T
 @{
-    ViewData["Title"] = "Edit Label";
+    ViewData["Title"] = T["labels.editTitle"];
 }
 
 <div style="max-width:480px;">
-    <h2 class="mb-3">Edit Label</h2>
+    <h2 class="mb-3">@T["labels.editTitle"]</h2>
     @if (!string.IsNullOrEmpty(Model.HouseholdName))
     {
-        <p class="text-muted">Space: @Model.HouseholdName</p>
+        <p class="text-muted">@T["labels.spaceColon"] @Model.HouseholdName</p>
     }
 
     <form method="post">
         <input type="hidden" name="LabelId" value="@Model.LabelId" />
         <div class="mb-3">
-            <label for="Name" class="form-label">Name</label>
+            <label for="Name" class="form-label">@T["labels.name"]</label>
             <input id="Name" name="Name" class="form-control" value="@Model.Name" required />
             <span asp-validation-for="Name" class="text-danger"></span>
         </div>
         <div class="mb-3">
-            <label for="Color" class="form-label">Color</label>
+            <label for="Color" class="form-label">@T["labels.color"]</label>
             <input id="Color" name="Color" type="color" class="form-control form-control-color" value="@Model.Color" />
         </div>
-        <button type="submit" class="btn btn-primary me-2">Save</button>
-        <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary me-2">@T["common.save"]</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">@T["common.cancel"]</a>
     </form>
 </div>

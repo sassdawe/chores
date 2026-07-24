@@ -1,7 +1,8 @@
 ﻿@using Microsoft.AspNetCore.Http.Extensions
 @using Microsoft.Extensions.Primitives
+@inject UiTranslationService T
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@T.CurrentLocale">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -74,9 +75,9 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm bg-body-tertiary mb-3 navbar-shadow">
             <div class="container">
-                <a class="navbar-brand fw-semibold" href="@dashboardHref">@(isAuthenticated ? "My Chores" : "Chores")</a>
+                <a class="navbar-brand fw-semibold" href="@dashboardHref">@(isAuthenticated ? T["nav.myChores"] : T["nav.chores"])</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                        aria-expanded="false" aria-label="@T["nav.manageChores"]">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
@@ -84,26 +85,26 @@
                     {
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" href="@manageChoresHref">Manage Chores</a>
+                            <a class="nav-link" href="@manageChoresHref">@T["nav.manageChores"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Members/Index">Spaces</a>
+                            <a class="nav-link" asp-area="" asp-page="/Members/Index">@T["nav.spaces"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Labels/Index">Labels</a>
+                            <a class="nav-link" asp-area="" asp-page="/Labels/Index">@T["nav.labels"]</a>
                         </li>
                     </ul>
                     <ul class="navbar-nav align-items-center gap-1">
                         <li class="nav-item">
-                            <button id="themeToggle" class="btn btn-sm btn-outline-secondary border-0" aria-label="Toggle theme" title="Toggle theme"></button>
+                            <button id="themeToggle" class="btn btn-sm btn-outline-secondary border-0" aria-label="@T["nav.toggleTheme"]" title="@T["nav.toggleTheme"]"></button>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Profile/Index">Profile</a>
+                            <a class="nav-link" asp-area="" asp-page="/Profile/Index">@T["nav.profile"]</a>
                         </li>
                         <li class="nav-item">
                             <form method="post" asp-page="/Auth/Logout" style="display:inline">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="nav-link btn btn-link p-0">Sign out</button>
+                                <button type="submit" class="nav-link btn btn-link p-0">@T["nav.signOut"]</button>
                             </form>
                         </li>
                     </ul>
@@ -123,7 +124,7 @@
             <span class="footer-item">&copy; 2026 &mdash; Chores</span>
             <span class="footer-item footer-item-with-separator">
                 <span class="footer-separator" aria-hidden="true">&mdash;</span>
-                <a asp-page="/Privacy" class="text-muted">Privacy Policy</a>
+                <a asp-page="/Privacy" class="text-muted">@T["footer.privacyPolicy"]</a>
             </span>
             @{
                 var configuration = Context.RequestServices.GetRequiredService<IConfiguration>();
@@ -134,7 +135,7 @@
                 {
                     <span class="footer-item footer-item-with-separator">
                         <span class="footer-separator" aria-hidden="true">&mdash;</span>
-                        <span>Hosted by</span>
+                        <span>@T["footer.hostedBy"]</span>
                         @if (!string.IsNullOrWhiteSpace(operatorUrl))
                         {
                             <a href="@operatorUrl" class="text-muted" target="_blank" rel="noopener">@operatorName</a>
