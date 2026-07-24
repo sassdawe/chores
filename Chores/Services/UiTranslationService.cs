@@ -22,10 +22,12 @@ public class UiTranslationService
         var cookie = httpContextAccessor.HttpContext?.Request.Cookies[CookieName];
         var requested = string.IsNullOrWhiteSpace(cookie) ? "en" : cookie.Trim();
 
-        if (store.IsEnabled(requested))
+        var requestedTranslations = store.IsEnabled(requested) ? store.GetTranslations(requested) : null;
+
+        if (requestedTranslations is not null)
         {
             CurrentLocale = requested;
-            _translations = store.GetTranslations(requested);
+            _translations = requestedTranslations;
         }
         else
         {
