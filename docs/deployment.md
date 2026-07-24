@@ -39,6 +39,7 @@ Set environment variables in `docker-compose.yml` or via `-e` flags:
 | `InstanceOperator__Name` | *(empty)* | Display name shown in the footer as "Hosted by …". Hidden if empty. |
 | `InstanceOperator__Url` | *(empty)* | Optional URL linked from the operator name in the footer. |
 | `InstanceOperator__Notice` | *(empty)* | Optional plain-text footer notice. Shown without a link. |
+| `Localization__EnabledLanguages` | `en` | Comma-separated language codes shown in the Profile language selector (e.g. `en,hu`). See [Language / UI Localisation](#language--ui-localisation). |
 
 Example `docker-compose.yml` override for a Raspberry Pi on your local network:
 
@@ -174,6 +175,7 @@ If you configure a custom domain, update `Fido2__ServerDomain` and `Fido2__Origi
 | `InstanceOperator__Url` | — | Optional URL linked from the operator name in the footer (e.g. a personal site). Ignored if `Name` is empty. |
 | `InstanceOperator__Notice` | — | Optional plain-text footer notice. Shown in the app footer without a link. |
 | `DataDirectory` | — | Path inside the container where `chores.db` is stored. Defaults to `/data`. |
+| `Localization__EnabledLanguages` | — | Comma-separated language codes to show in the Profile language selector (e.g. `en,hu`). Defaults to `en`. See [Language / UI Localisation](#language--ui-localisation). |
 
 ### 6. Deploy updates
 
@@ -183,6 +185,66 @@ docker push <your-registry-name>.azurecr.io/chores:latest
 
 az webapp restart --name <app-name> --resource-group <resource-group>
 ```
+
+---
+
+## Language / UI Localisation
+
+The UI language is controlled by a combination of an environment variable (which languages are available) and a per-user cookie (which language that user has selected). The backend, database values, and API responses remain English-only.
+
+### Enabling languages
+
+Set the `Localization:EnabledLanguages` environment variable to a comma-separated list of language codes. Only languages whose code appears in this list will be shown in the language selector on the Profile page. When exactly one language is enabled the selector is hidden.
+
+| Variable | Default | Description |
+|---|---|---|
+| `Localization:EnabledLanguages` | `en` | Comma-separated list of BCP 47-style language codes to make available in the UI (e.g. `en,hu`). |
+
+Docker Compose example:
+
+```yaml
+environment:
+  - Localization:EnabledLanguages=en,hu
+```
+
+Azure App Service example:
+
+```sh
+az webapp config appsettings set \
+  --name <app-name> \
+  --resource-group <resource-group> \
+  --settings Localization__EnabledLanguages="en,hu"
+```
+
+### Built-in languages
+
+The following languages are bundled with the application and are ready to enable without any extra files:
+
+| Code | Language |
+|---|---|
+| `en` | English |
+| `hu` | Magyar (Hungarian) |
+
+English (`en`) is always the fallback: if a translation key is missing in the active language it is looked up in English, and if it is missing there too the key itself is returned.
+
+### Adding a custom language (without redeployment)
+
+Place a UTF-8 JSON file in `{DataDirectory}/languages/` (e.g. `/data/languages/fr.json`). The file must contain at minimum the `_code` and `_name` keys:
+
+```json
+{
+  "_code": "fr",
+  "_name": "Français",
+  "nav.myChores": "Mes tâches",
+  "nav.chores": "Tâches"
+}
+```
+
+Keys not present in the custom file fall back to the English built-in values, so a partial translation is perfectly valid. You can also place a JSON file for an already built-in language (e.g. `en.json`) to override individual keys without replacing the full file — uploaded entries take precedence over built-in ones.
+
+After adding or modifying files in the `languages/` directory, restart the container so the singleton `TranslationStore` reloads the files.
+
+Then add the new code to `Localization:EnabledLanguages` and restart.
 
 ---
 
