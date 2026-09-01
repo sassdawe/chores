@@ -4,7 +4,7 @@ namespace Chores.Services;
 
 public static partial class LoginNameValidator
 {
-    public const string LostPlaceholderLoginName = "lost";
+    public const string LostPlaceholderLoginName = "lost-during-move";
 
     public static bool TryNormalize(string? loginName, out string normalizedLoginName)
     {

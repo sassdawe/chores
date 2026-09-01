@@ -104,7 +104,7 @@
   "chores.moveReview": "Verschiebung prüfen",
   "chores.moveStart": "Aufgabe verschieben",
   "chores.moveConfirmMessage": "{0} nach {1} verschieben?",
-  "chores.moveHistoryNote": "Der Erledigungsverlauf wird ebenfalls verschoben. Einträge von Mitgliedern ohne Zugriff auf den Zielbereich werden lost zugewiesen.",
+  "chores.moveHistoryNote": "Der Erledigungsverlauf wird ebenfalls verschoben. Einträge von Mitgliedern ohne Zugriff auf den Zielbereich werden lost-during-move zugewiesen.",
   "chores.moveNoOtherSpaces": "Sie benötigen Zugriff auf einen weiteren Bereich, bevor diese Aufgabe verschoben werden kann.",
   "chores.moveLabelsTitle": "Etiketten für die verschobene Aufgabe auswählen",
   "chores.moveNoLabelsInDestination": "In diesem Bereich gibt es noch keine Etiketten. Sie können jetzt speichern und später Etiketten hinzufügen.",

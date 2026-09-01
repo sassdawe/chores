@@ -104,7 +104,7 @@
   "chores.moveReview": "Revisar movimiento",
   "chores.moveStart": "Mover tarea",
   "chores.moveConfirmMessage": "¿Mover {0} a {1}?",
-  "chores.moveHistoryNote": "El historial de realizaciones también se mueve. Los registros de miembros sin acceso al espacio de destino se reasignarán a lost.",
+  "chores.moveHistoryNote": "El historial de realizaciones también se mueve. Los registros de miembros sin acceso al espacio de destino se reasignarán a lost-during-move.",
   "chores.moveNoOtherSpaces": "Necesita acceso a otro espacio antes de poder mover esta tarea.",
   "chores.moveLabelsTitle": "Elegir etiquetas para la tarea movida",
   "chores.moveNoLabelsInDestination": "Todavía no hay etiquetas en este espacio. Puede guardar ahora y agregar etiquetas más tarde.",

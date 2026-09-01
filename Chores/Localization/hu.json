@@ -104,7 +104,7 @@
   "chores.moveReview": "Áthelyezés ellenőrzése",
   "chores.moveStart": "Feladat áthelyezése",
   "chores.moveConfirmMessage": "Áthelyezed a(z) {0} feladatot ide: {1}?",
-  "chores.moveHistoryNote": "Az elvégzési előzmények is átkerülnek. Azok a bejegyzések, amelyek készítői nem férnek hozzá a cél térhez, lost névre lesznek átírva.",
+  "chores.moveHistoryNote": "Az elvégzési előzmények is átkerülnek. Azok a bejegyzések, amelyek készítői nem férnek hozzá a cél térhez, lost-during-move névre lesznek átírva.",
   "chores.moveNoOtherSpaces": "A feladat áthelyezéséhez hozzá kell férnie egy másik térhez is.",
   "chores.moveLabelsTitle": "Válassz címkéket az áthelyezett feladathoz",
   "chores.moveNoLabelsInDestination": "Ebben a térben még nincsenek címkék. Most menthetsz, és később is adhatsz hozzá címkéket.",
