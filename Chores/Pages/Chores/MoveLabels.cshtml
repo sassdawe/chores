@@ -1,0 +1,38 @@
+@page
+@model MoveLabelsModel
+@inject UiTranslationService T
+@{
+    ViewData["Title"] = T["chores.moveLabelsTitle"];
+}
+
+<div style="max-width:480px;">
+    <h2 class="mb-3">@T["chores.moveLabelsTitle"]</h2>
+    <p class="text-muted mb-1">@T["chores.choreName"] @Model.ChoreName</p>
+    <p class="text-muted">@T["chores.spaceColon"] @Model.HouseholdName</p>
+
+    <form method="post">
+        <input type="hidden" asp-for="ChoreId" />
+        <div class="mb-3">
+            <label class="form-label">@T["chores.labels"]</label>
+            @if (Model.AvailableLabels.Any())
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var label in Model.AvailableLabels)
+                    {
+                        <label class="d-flex align-items-center gap-1" style="cursor:pointer;">
+                            <input type="checkbox" name="SelectedLabelIds" value="@label.Id"
+                                   checked="@(Model.SelectedLabelIds.Contains(label.Id) ? "checked" : null)" />
+                            <span class="badge" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
+                        </label>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted small mb-0">@T["chores.moveNoLabelsInDestination"]</p>
+            }
+        </div>
+        <button type="submit" class="btn btn-primary me-2">@T["common.save"]</button>
+        <a href="@Model.BuildEditPath()" class="btn btn-outline-secondary">@T["common.cancel"]</a>
+    </form>
+</div>

@@ -4,10 +4,13 @@ namespace Chores.Services;
 
 public static partial class LoginNameValidator
 {
+    public const string LostPlaceholderLoginName = "lost-during-move";
+
     public static bool TryNormalize(string? loginName, out string normalizedLoginName)
     {
         normalizedLoginName = (loginName ?? string.Empty).Trim();
-        return LoginNamePattern().IsMatch(normalizedLoginName);
+        return LoginNamePattern().IsMatch(normalizedLoginName)
+            && !string.Equals(normalizedLoginName, LostPlaceholderLoginName, StringComparison.OrdinalIgnoreCase);
     }
 
     [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._-]{2,31}$", RegexOptions.CultureInvariant)]
