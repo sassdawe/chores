@@ -91,6 +91,10 @@ public class ScheduleAdherenceService
         };
     }
 
+    /// <summary>Days between occurrences, or null for schedules without a fixed cadence.</summary>
+    public static int? GetIntervalDays(Schedule schedule) =>
+        schedule == Schedule.AdHoc ? null : IntervalDays(schedule);
+
     private static int NotificationLeadDays(Schedule schedule) => schedule switch
     {
         Schedule.Daily => 0,

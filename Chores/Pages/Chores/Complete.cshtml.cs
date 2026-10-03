@@ -43,6 +43,12 @@ public class CompleteModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? Sort { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? View { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Range { get; set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id);
@@ -83,6 +89,16 @@ public class CompleteModel : PageModel
         if (!string.IsNullOrWhiteSpace(Sort))
         {
             queryBuilder.Add("sort", Sort);
+        }
+
+        if (!string.IsNullOrWhiteSpace(View))
+        {
+            queryBuilder.Add("view", View);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Range))
+        {
+            queryBuilder.Add("range", Range);
         }
 
         foreach (var householdId in HouseholdIds)
