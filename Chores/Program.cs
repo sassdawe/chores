@@ -23,6 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 builder.Services.AddScoped<ScheduleAdherenceService>();
 builder.Services.AddScoped<HouseholdInvitationService>();
 builder.Services.AddScoped<HouseholdMembershipService>();
+builder.Services.AddScoped<ChoreMoveService>();
 
 // Localization: singleton store + scoped per-request service
 builder.Services.AddSingleton<TranslationStore>();

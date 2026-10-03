@@ -104,6 +104,21 @@ public class EditModel : PageModel
         return string.IsNullOrEmpty(queryString) ? pagePath : $"{pagePath}{queryString}";
     }
 
+    public string BuildMovePath()
+    {
+        var queryBuilder = new QueryBuilder
+        {
+            { "id", ChoreId.ToString(CultureInfo.InvariantCulture) }
+        };
+
+        if (LabelId.HasValue)
+        {
+            queryBuilder.Add("labelId", LabelId.Value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return $"{Request.PathBase}/Chores/Move{queryBuilder.ToQueryString().Value}";
+    }
+
     private async Task LoadAvailableLabelsAsync(int householdId)
     {
         AvailableLabels = await _db.Labels

@@ -36,6 +36,7 @@ The app is designed to be a **tracker**, so it make it super easy to record when
 - View overdue/on-time status on the dashboard for all spaces or a selected space
 - See the last-completion status on the chore completion screen and summary stats in manage chores
 - Create and rename multiple named spaces and manage chores, members, and labels for each one
+- Move chores between spaces while keeping their completion history and then choose destination-space labels
 - Space owners can invite members by login name, and invited users can accept invites from their profile without leaving their existing spaces
 - Passwordless authentication with FIDO2/passkeys
 - Installable Progressive Web App (PWA) with an offline fallback
