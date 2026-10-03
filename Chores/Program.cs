@@ -21,6 +21,7 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
     opt.UseSqlite($"Data Source={dbPath}"));
 
 builder.Services.AddScoped<ScheduleAdherenceService>();
+builder.Services.AddScoped<AgendaService>();
 builder.Services.AddScoped<HouseholdInvitationService>();
 builder.Services.AddScoped<HouseholdMembershipService>();
 builder.Services.AddScoped<ChoreMoveService>();

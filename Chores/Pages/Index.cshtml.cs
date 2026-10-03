@@ -17,21 +17,30 @@ public enum DashboardSortMode
     NextDue
 }
 
+public enum DashboardViewMode
+{
+    List,
+    Agenda
+}
+
 [Authorize]
 public class IndexModel : PageModel
 {
     private readonly AppDbContext _db;
     private readonly ScheduleAdherenceService _adherence;
     private readonly HouseholdMembershipService _householdMemberships;
+    private readonly AgendaService _agenda;
 
     public IndexModel(
         AppDbContext db,
         ScheduleAdherenceService adherence,
-        HouseholdMembershipService householdMemberships)
+        HouseholdMembershipService householdMemberships,
+        AgendaService agenda)
     {
         _db = db;
         _adherence = adherence;
         _householdMemberships = householdMemberships;
+        _agenda = agenda;
     }
 
     public List<ChoreStatus> ChoreStatuses { get; set; } = [];
@@ -41,6 +50,10 @@ public class IndexModel : PageModel
     public List<int> ActiveHouseholdIds { get; set; } = [];
     public List<int> EffectiveHouseholdIds { get; set; } = [];
     public DashboardSortMode ActiveSortMode { get; set; } = DashboardSortMode.Alphabet;
+    public DashboardViewMode ActiveViewMode { get; set; } = DashboardViewMode.List;
+    public AgendaRange ActiveAgendaRange { get; set; } = AgendaRange.TwoWeeks;
+    public Agenda? Agenda { get; set; }
+    public bool IsPastTruncated { get; set; }
     public bool IsAllSpacesSelected { get; set; }
     public bool ShowHouseholdNames => Spaces.Count > 1 && (IsAllSpacesSelected || ActiveHouseholdIds.Count > 1);
     public string SelectedSpacesSummary { get; set; } = "All spaces";
@@ -53,11 +66,57 @@ public class IndexModel : PageModel
     };
     public bool HasCustomSortMode => ActiveSortMode != DashboardSortMode.Alphabet;
     public string ActiveSortQueryValue => ToQueryValue(ActiveSortMode);
+    public string ActiveViewQueryValue => ToQueryValue(ActiveViewMode);
+    public string ActiveAgendaRangeQueryValue => ToQueryValue(ActiveAgendaRange);
+    public string AgendaStateCookieName { get; private set; } = string.Empty;
+    public string AgendaStateCookiePath => Request.PathBase.HasValue ? Request.PathBase.Value! : "/";
 
-    public async Task OnGetAsync([FromQuery] int? labelId, [FromQuery] List<int>? householdIds, [FromQuery] string? sort)
+    private IReadOnlyDictionary<string, bool> _agendaBlockStates = new Dictionary<string, bool>();
+
+    public bool IsAgendaBlockOpen(string key, bool defaultOpen) =>
+        _agendaBlockStates.TryGetValue(key, out var isOpen) ? isOpen : defaultOpen;
+
+    public static IReadOnlyList<AgendaRange> SelectableAgendaRanges =>
+    [
+        AgendaRange.OneWeek,
+        AgendaRange.TwoWeeks,
+        AgendaRange.FourWeeks,
+        AgendaRange.EightWeeks,
+        AgendaRange.PastTwoWeeks
+    ];
+
+    public static string ToQueryValue(AgendaRange range) => range switch
+    {
+        AgendaRange.OneWeek => "1w",
+        AgendaRange.FourWeeks => "4w",
+        AgendaRange.EightWeeks => "8w",
+        AgendaRange.PastTwoWeeks => "past",
+        _ => "2w"
+    };
+
+    public static string ToTranslationKey(AgendaRange range) => range switch
+    {
+        AgendaRange.OneWeek => "agenda.range1Week",
+        AgendaRange.FourWeeks => "agenda.range4Weeks",
+        AgendaRange.EightWeeks => "agenda.range8Weeks",
+        AgendaRange.PastTwoWeeks => "agenda.rangePast",
+        _ => "agenda.range2Weeks"
+    };
+
+    public async Task OnGetAsync(
+        [FromQuery] int? labelId,
+        [FromQuery] List<int>? householdIds,
+        [FromQuery] string? sort,
+        [FromQuery] string? view = null,
+        [FromQuery] string? range = null)
     {
         ActiveLabelId = labelId;
         ActiveSortMode = ParseSortMode(sort);
+        ActiveViewMode = ParseViewMode(view);
+        ActiveAgendaRange = ParseAgendaRange(range);
+
+        AgendaStateCookieName = AgendaViewState.CookieName(User.Identity?.Name);
+        _agendaBlockStates = AgendaViewState.Parse(Request.Cookies[AgendaStateCookieName]);
 
         Spaces = await _householdMemberships.GetMembershipsAsync(User.Identity!.Name);
         var availableHouseholdIds = Spaces.Select(membership => membership.HouseholdId).ToList();
@@ -90,13 +149,46 @@ public class IndexModel : PageModel
             var latest = latestByChore[c.Id];
             return new ChoreStatus(c, latest.Adherence, latest.LastCompletedAtUtc);
         })).ToList();
+
+        if (ActiveViewMode == DashboardViewMode.Agenda)
+        {
+            Agenda = _agenda.Build(chores, await LoadAgendaRecordsAsync(chores), latestByChore, ActiveAgendaRange, DateTime.UtcNow);
+        }
+    }
+
+    private async Task<List<CompletionRecord>> LoadAgendaRecordsAsync(IReadOnlyCollection<Chore> chores)
+    {
+        if (chores.Count == 0)
+        {
+            return [];
+        }
+
+        var choreIds = chores.Select(chore => chore.Id).ToList();
+        var pastStart = AgendaService.PastStartUtc(ActiveAgendaRange, DateTime.UtcNow.Date);
+
+        // Fetch one extra row so the view can tell the user the list was capped.
+        var records = await _db.CompletionRecords
+            .Include(record => record.CompletedByUser)
+            .Where(record => choreIds.Contains(record.ChoreId) && record.CompletedAtUtc >= pastStart)
+            .OrderByDescending(record => record.CompletedAtUtc)
+            .Take(AgendaService.MaxPastRecords + 1)
+            .ToListAsync();
+
+        IsPastTruncated = records.Count > AgendaService.MaxPastRecords;
+        return IsPastTruncated ? records.Take(AgendaService.MaxPastRecords).ToList() : records;
     }
 
     // Keep dashboard links shareable by omitting redundant space filters when all spaces are selected.
-    public string BuildDashboardPath(int? labelId = null, DashboardSortMode? sortMode = null)
+    public string BuildDashboardPath(
+        int? labelId = null,
+        DashboardSortMode? sortMode = null,
+        DashboardViewMode? viewMode = null,
+        AgendaRange? agendaRange = null)
     {
         var queryBuilder = new QueryBuilder();
         var effectiveSortMode = sortMode ?? ActiveSortMode;
+        var effectiveViewMode = viewMode ?? ActiveViewMode;
+        var effectiveAgendaRange = agendaRange ?? ActiveAgendaRange;
 
         if (labelId.HasValue)
         {
@@ -106,6 +198,16 @@ public class IndexModel : PageModel
         if (effectiveSortMode != DashboardSortMode.Alphabet)
         {
             queryBuilder.Add("sort", ToQueryValue(effectiveSortMode));
+        }
+
+        if (effectiveViewMode != DashboardViewMode.List)
+        {
+            queryBuilder.Add("view", ToQueryValue(effectiveViewMode));
+
+            if (effectiveAgendaRange != AgendaRange.TwoWeeks)
+            {
+                queryBuilder.Add("range", ToQueryValue(effectiveAgendaRange));
+            }
         }
 
         foreach (var householdId in ActiveHouseholdIds)
@@ -152,6 +254,16 @@ public class IndexModel : PageModel
         if (ActiveSortMode != DashboardSortMode.Alphabet)
         {
             queryBuilder.Add("sort", ToQueryValue(ActiveSortMode));
+        }
+
+        if (ActiveViewMode != DashboardViewMode.List)
+        {
+            queryBuilder.Add("view", ToQueryValue(ActiveViewMode));
+
+            if (ActiveAgendaRange != AgendaRange.TwoWeeks)
+            {
+                queryBuilder.Add("range", ToQueryValue(ActiveAgendaRange));
+            }
         }
 
         foreach (var householdId in ActiveHouseholdIds)
@@ -217,6 +329,32 @@ public class IndexModel : PageModel
             "due" => DashboardSortMode.NextDue,
             _ => DashboardSortMode.Alphabet
         };
+    }
+
+    private static DashboardViewMode ParseViewMode(string? view)
+    {
+        return view?.Trim().ToLowerInvariant() switch
+        {
+            "agenda" => DashboardViewMode.Agenda,
+            _ => DashboardViewMode.List
+        };
+    }
+
+    private static AgendaRange ParseAgendaRange(string? range)
+    {
+        return range?.Trim().ToLowerInvariant() switch
+        {
+            "1w" => AgendaRange.OneWeek,
+            "4w" => AgendaRange.FourWeeks,
+            "8w" => AgendaRange.EightWeeks,
+            "past" => AgendaRange.PastTwoWeeks,
+            _ => AgendaRange.TwoWeeks
+        };
+    }
+
+    private static string ToQueryValue(DashboardViewMode viewMode)
+    {
+        return viewMode == DashboardViewMode.Agenda ? "agenda" : "list";
     }
 
     private static string ToQueryValue(DashboardSortMode sortMode)

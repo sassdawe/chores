@@ -1,0 +1,22 @@
+@model CompleteModel
+@* Carries the dashboard's filter/view configuration through the POST so the redirect back restores it. *@
+@if (Model.LabelId.HasValue)
+{
+    <input type="hidden" name="LabelId" value="@Model.LabelId" />
+}
+@if (!string.IsNullOrWhiteSpace(Model.Sort))
+{
+    <input type="hidden" name="Sort" value="@Model.Sort" />
+}
+@if (!string.IsNullOrWhiteSpace(Model.View))
+{
+    <input type="hidden" name="View" value="@Model.View" />
+}
+@if (!string.IsNullOrWhiteSpace(Model.Range))
+{
+    <input type="hidden" name="Range" value="@Model.Range" />
+}
+@foreach (var householdId in Model.HouseholdIds)
+{
+    <input type="hidden" name="HouseholdIds" value="@householdId" />
+}

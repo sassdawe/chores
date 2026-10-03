@@ -27,7 +27,47 @@
     .dashboard-space-menu { min-width:min(22rem, calc(100vw - 2rem)); }
     .dashboard-space-options { display:grid; gap:.5rem; max-height:16rem; overflow:auto; }
     .dashboard-space-actions { display:flex; justify-content:flex-end; gap:.5rem; }
-    .dashboard-filter-actions { display:flex; align-items:center; gap:.75rem; }
+    .dashboard-filter-actions { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    .agenda-days { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
+    .agenda-day {
+        padding:12px 16px;
+        background: var(--bs-body-bg); border:1px solid var(--bs-border-color); border-radius:10px;
+    }
+    .agenda-day-past { background: var(--bs-tertiary-bg); }
+    .agenda-day-today { border-color: var(--bs-primary); border-width:2px; }
+    .agenda-day-details { display:grid; grid-template-columns: 12rem minmax(0, 1fr); gap:12px; align-items:start; }
+    .agenda-day-summary { grid-column:1; }
+    .agenda-day-details > .agenda-entries { grid-column:2; }
+    .agenda-summary {
+        display:flex; align-items:center; gap:6px; cursor:pointer;
+        list-style:none; min-height:1.5rem;
+    }
+    .agenda-summary::-webkit-details-marker { display:none; }
+    .agenda-summary::before {
+        content:""; flex:none; width:.45rem; height:.45rem;
+        border-right:2px solid currentColor; border-bottom:2px solid currentColor;
+        transform: rotate(-45deg); transition: transform .15s;
+    }
+    details[open] > .agenda-summary::before { transform: rotate(45deg); }
+    .agenda-summary:focus-visible { outline:2px solid var(--bs-primary); outline-offset:2px; border-radius:6px; }
+    .agenda-section { margin-bottom:1rem; }
+    .agenda-section > .agenda-summary { margin-bottom:.5rem; }
+    .agenda-date { display:flex; align-items:baseline; gap:.4rem; min-width:0; white-space:nowrap; }
+    .agenda-date-weekday { font-weight:600; }
+    .agenda-entries { display:grid; gap:6px; min-width:0; }
+    .agenda-entry {
+        display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;
+        padding:6px 10px; border-radius:8px; border:1px solid var(--bs-border-color);
+        background: var(--bs-body-bg); text-decoration:none; color:inherit;
+        transition: background .15s;
+    }
+    .agenda-entry:hover { background: var(--bs-tertiary-bg); }
+    .agenda-entry-main { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+    .agenda-overdue { display:grid; gap:6px; }
+    @@media (max-width: 575.98px) {
+        .agenda-day-details { grid-template-columns: minmax(0, 1fr); }
+        .agenda-day-details > .agenda-entries { grid-column:1; }
+    }
 </style>
 
 <div class="dashboard-filter-bar">
@@ -41,6 +81,11 @@
             @if (Model.HasCustomSortMode)
             {
                 <input type="hidden" name="sort" value="@Model.ActiveSortQueryValue" />
+            }
+            @if (Model.ActiveViewMode == DashboardViewMode.Agenda)
+            {
+                <input type="hidden" name="view" value="@Model.ActiveViewQueryValue" />
+                <input type="hidden" name="range" value="@Model.ActiveAgendaRangeQueryValue" />
             }
             <div class="dropdown" data-bs-auto-close="outside">
                 <button class="btn btn-outline-secondary dropdown-toggle dashboard-space-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -80,9 +125,34 @@
     }
 
     <div class="dashboard-filter-actions">
-        <a class="btn btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId, Model.GetNextSortMode())" title="Switch sorting mode">
-            @T["common.sort"]: @Model.ActiveSortModeLabel
-        </a>
+        <div class="btn-group" role="group" aria-label="@T["common.view"]">
+            <a class="btn btn-outline-secondary @(Model.ActiveViewMode == DashboardViewMode.List ? "active" : string.Empty)"
+               href="@Model.BuildDashboardPath(Model.ActiveLabelId, viewMode: DashboardViewMode.List)"
+               aria-current="@(Model.ActiveViewMode == DashboardViewMode.List ? "true" : null)">@T["view.list"]</a>
+            <a class="btn btn-outline-secondary @(Model.ActiveViewMode == DashboardViewMode.Agenda ? "active" : string.Empty)"
+               href="@Model.BuildDashboardPath(Model.ActiveLabelId, viewMode: DashboardViewMode.Agenda)"
+               aria-current="@(Model.ActiveViewMode == DashboardViewMode.Agenda ? "true" : null)">@T["view.agenda"]</a>
+        </div>
+
+        @if (Model.ActiveViewMode == DashboardViewMode.Agenda)
+        {
+            <div class="btn-group" role="group" aria-label="@T["agenda.range"]">
+                @foreach (var range in IndexModel.SelectableAgendaRanges)
+                {
+                    var isActiveRange = Model.ActiveAgendaRange == range;
+                    <a class="btn btn-sm btn-outline-secondary @(isActiveRange ? "active" : string.Empty)"
+                       href="@Model.BuildDashboardPath(Model.ActiveLabelId, viewMode: DashboardViewMode.Agenda, agendaRange: range)"
+                       aria-current="@(isActiveRange ? "true" : null)">@T[IndexModel.ToTranslationKey(range)]</a>
+                }
+            </div>
+        }
+        else
+        {
+            <a class="btn btn-outline-secondary" href="@Model.BuildDashboardPath(Model.ActiveLabelId, Model.GetNextSortMode())" title="Switch sorting mode">
+                @T["common.sort"]: @Model.ActiveSortModeLabel
+            </a>
+        }
+
         <a class="btn btn-primary" href="@Model.BuildCreateChorePath()">@T["common.addChore"]</a>
     </div>
 </div>
@@ -108,6 +178,140 @@
 @if (!Model.ChoreStatuses.Any())
 {
     <p class="text-muted">@T["chores.noChores"] <a asp-page="/Chores/Index">@T["chores.addSomeChores"]</a> @T["chores.toGetStarted"]</p>
+}
+else if (Model.ActiveViewMode == DashboardViewMode.Agenda && Model.Agenda is not null)
+{
+    var agenda = Model.Agenda;
+
+    <div class="agenda-view" data-agenda-state="@Model.AgendaStateCookieName" data-agenda-state-path="@Model.AgendaStateCookiePath">
+    @if (Model.ActiveAgendaRange == AgendaRange.PastTwoWeeks || Model.IsPastTruncated)
+    {
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            @if (Model.ActiveAgendaRange == AgendaRange.PastTwoWeeks)
+            {
+                <span class="text-muted small">@T["agenda.pastNote"]</span>
+            }
+            @if (Model.IsPastTruncated)
+            {
+                <span class="text-muted small">@string.Format(T["agenda.pastTruncated"], AgendaService.MaxPastRecords)</span>
+            }
+        </div>
+    }
+
+    @if (agenda.Overdue.Any())
+    {
+        <details class="agenda-section" data-agenda-key="@AgendaViewState.OverdueKey" open="@Model.IsAgendaBlockOpen(AgendaViewState.OverdueKey, true)">
+            <summary class="agenda-summary">
+                <h2 class="h5 mb-0">@T["agenda.overdueTitle"]</h2>
+                <span class="badge text-bg-danger" aria-label="@string.Format(T["agenda.entryCount"], agenda.Overdue.Count)">@agenda.Overdue.Count</span>
+            </summary>
+            <div class="agenda-overdue">
+                @foreach (var overdue in agenda.Overdue)
+                {
+                    <a class="agenda-entry" href="@Model.BuildCompletePath(overdue.Chore.Id)">
+                        <span class="agenda-entry-main">
+                            <span>@overdue.Chore.Name</span>
+                            @if (Model.ShowHouseholdNames)
+                            {
+                                <span class="text-muted small">@overdue.Chore.Household.Name</span>
+                            }
+                            @foreach (var label in overdue.Chore.Labels)
+                            {
+                                <span class="label-pill" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
+                            }
+                        </span>
+                        <span class="badge @ScheduleAdherenceService.ToBadgeClass(overdue.Chore.Schedule, overdue.Adherence)">
+                            @ScheduleAdherenceService.ToDisplayText(overdue.Chore.Schedule, overdue.Adherence, T)
+                        </span>
+                    </a>
+                }
+            </div>
+        </details>
+    }
+
+    <ul class="agenda-days">
+        @foreach (var day in agenda.Days)
+        {
+            var isToday = day.DateUtc == agenda.TodayUtc;
+            var isPast = day.DateUtc < agenda.TodayUtc;
+            var dayKey = AgendaViewState.DayKey(day.DateUtc);
+            <li class="agenda-day @(isToday ? "agenda-day-today" : string.Empty) @(isPast ? "agenda-day-past" : string.Empty)">
+                <details class="agenda-day-details" data-agenda-key="@dayKey" open="@Model.IsAgendaBlockOpen(dayKey, isToday || day.Entries.Any())">
+                    <summary class="agenda-summary">
+                        <span class="agenda-date">
+                            <span class="agenda-date-weekday">@(isToday ? T["agenda.today"] : day.DateUtc.ToString("ddd"))</span>
+                            <span class="text-muted small">@day.DateUtc.ToString("d MMM yyyy")</span>
+                        </span>
+                        @if (day.Entries.Any())
+                        {
+                            <span class="badge text-bg-secondary" aria-label="@string.Format(T["agenda.entryCount"], day.Entries.Count)">@day.Entries.Count</span>
+                        }
+                    </summary>
+                    <div class="agenda-entries">
+                        @if (!day.Entries.Any())
+                        {
+                            <span class="text-muted small">@T["agenda.nothingScheduled"]</span>
+                        }
+                        @foreach (var entry in day.Entries)
+                        {
+                            <a class="agenda-entry" href="@Model.BuildCompletePath(entry.Chore.Id)">
+                                <span class="agenda-entry-main">
+                                    <span>@entry.Chore.Name</span>
+                                    @if (Model.ShowHouseholdNames)
+                                    {
+                                        <span class="text-muted small">@entry.Chore.Household.Name</span>
+                                    }
+                                    @foreach (var label in entry.Chore.Labels)
+                                    {
+                                        <span class="label-pill" style="background-color:@label.Color; color:@label.GetAccessibleTextColor();">@label.Name</span>
+                                    }
+                                </span>
+                                @switch (entry.Kind)
+                                {
+                                    case AgendaEntryKind.Completed:
+                                        <span class="badge text-bg-success">@string.Format(T["agenda.completedBy"], entry.Record!.CompletedByUser?.LoginName)</span>
+                                        break;
+                                    case AgendaEntryKind.Skipped:
+                                        <span class="badge text-bg-warning">@string.Format(T["agenda.skippedBy"], entry.Record!.CompletedByUser?.LoginName)</span>
+                                        break;
+                                    default:
+                                        <span class="badge text-bg-secondary">@T["agenda.due"]: @entry.Chore.Schedule.ToLocalizedLabel(T)</span>
+                                        break;
+                                }
+                            </a>
+                        }
+                    </div>
+                </details>
+            </li>
+        }
+    </ul>
+
+    @if (agenda.UnscheduledChores.Any())
+    {
+        <details class="agenda-section mt-4" data-agenda-key="@AgendaViewState.UnscheduledKey" open="@Model.IsAgendaBlockOpen(AgendaViewState.UnscheduledKey, true)">
+            <summary class="agenda-summary">
+                <h2 class="h5 mb-0">@T["agenda.unscheduledTitle"]</h2>
+                <span class="badge text-bg-secondary" aria-label="@string.Format(T["agenda.entryCount"], agenda.UnscheduledChores.Count)">@agenda.UnscheduledChores.Count</span>
+            </summary>
+            <p class="text-muted small">@T["agenda.unscheduledHint"]</p>
+            <div class="agenda-overdue">
+                @foreach (var chore in agenda.UnscheduledChores)
+                {
+                    <a class="agenda-entry" href="@Model.BuildCompletePath(chore.Id)">
+                        <span class="agenda-entry-main">
+                            <span>@chore.Name</span>
+                            @if (Model.ShowHouseholdNames)
+                            {
+                                <span class="text-muted small">@chore.Household.Name</span>
+                            }
+                        </span>
+                        <span class="badge text-bg-secondary">@T["adherence.adHoc"]</span>
+                    </a>
+                }
+            </div>
+        </details>
+    }
+    </div>
 }
 else
 {
@@ -138,4 +342,8 @@ else
             </li>
         }
     </ul>
+}
+
+@section Scripts {
+    <script src="~/js/agenda-state.js" asp-append-version="true"></script>
 }

@@ -102,6 +102,25 @@ public class DashboardPathTests
     }
 
     [Fact]
+    public void CompleteBuildDashboardPath_PreservesAgendaViewAndRange()
+    {
+        using var db = CreateDbContext();
+        var model = new CompleteModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        {
+            View = "agenda",
+            Range = "8w",
+            PageContext = new PageContext
+            {
+                HttpContext = new DefaultHttpContext()
+            }
+        };
+
+        var path = model.BuildDashboardPath();
+
+        Assert.Equal("/?view=agenda&range=8w", path);
+    }
+
+    [Fact]
     public async Task OnGetAsync_SortsChoresByLabelWhenRequested()
     {
         await using var db = CreateDbContext();
@@ -153,6 +172,67 @@ public class DashboardPathTests
         await model.OnGetAsync(null, null, "due");
 
         Assert.Equal(["Overdue", "Due Today", "On Time"], model.ChoreStatuses.Select(status => status.Chore.Name).ToArray());
+    }
+
+    [Fact]
+    public async Task OnGetAsync_BuildsAgendaWhenAgendaViewRequested()
+    {
+        await using var db = CreateDbContext();
+        var household = new Household { Name = "Home" };
+        var user = new AppUser { LoginName = "alice" };
+        var weeklyChore = new Chore { Name = "Vacuum", Household = household, Schedule = Schedule.Weekly };
+        var adHocChore = new Chore { Name = "Fix shelf", Household = household, Schedule = Schedule.AdHoc };
+
+        db.Households.Add(household);
+        db.Users.Add(user);
+        db.HouseholdMemberships.Add(new HouseholdMembership { User = user, Household = household, IsOwner = true, JoinedAtUtc = DateTime.UtcNow });
+        db.Chores.AddRange(weeklyChore, adHocChore);
+        await db.SaveChangesAsync();
+
+        db.CompletionRecords.Add(new CompletionRecord
+        {
+            ChoreId = weeklyChore.Id,
+            CompletedByUserId = user.Id,
+            CompletedAtUtc = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var model = CreateAuthenticatedModel(db, "/chores", user.LoginName);
+
+        await model.OnGetAsync(null, null, null, "agenda", "4w");
+
+        Assert.NotNull(model.Agenda);
+        Assert.Equal(AgendaRange.FourWeeks, model.ActiveAgendaRange);
+        Assert.Equal(DashboardViewMode.Agenda, model.ActiveViewMode);
+        Assert.False(model.IsPastTruncated);
+        Assert.Contains(model.Agenda!.Days.SelectMany(day => day.Entries), entry => entry.Kind == AgendaEntryKind.Completed);
+        Assert.Contains(model.Agenda!.Days.SelectMany(day => day.Entries), entry => entry.Kind == AgendaEntryKind.Upcoming);
+        Assert.Equal("Fix shelf", Assert.Single(model.Agenda!.UnscheduledChores).Name);
+    }
+
+    [Fact]
+    public void BuildDashboardPath_PreservesAgendaViewAndRange()
+    {
+        using var db = CreateDbContext();
+        var model = CreateModel(db, "/chores");
+        model.ActiveViewMode = DashboardViewMode.Agenda;
+        model.ActiveAgendaRange = AgendaRange.EightWeeks;
+
+        var path = model.BuildDashboardPath();
+
+        Assert.Equal("/chores/?view=agenda&range=8w", path);
+    }
+
+    [Fact]
+    public void BuildDashboardPath_OmitsDefaultAgendaRange()
+    {
+        using var db = CreateDbContext();
+        var model = CreateModel(db, "/chores");
+        model.ActiveViewMode = DashboardViewMode.Agenda;
+
+        var path = model.BuildDashboardPath();
+
+        Assert.Equal("/chores/?view=agenda", path);
     }
 
     [Fact]
@@ -306,9 +386,38 @@ public class DashboardPathTests
         Assert.Equal("/chores/Chores?labelId=7", path);
     }
 
+    [Fact]
+    public async Task OnGetAsync_AppliesSavedAgendaBlockStateFromCookie()
+    {
+        await using var db = CreateDbContext();
+        var model = CreateAuthenticatedModel(db, "/chores", "alice");
+        var cookieName = AgendaViewState.CookieName("alice");
+        model.HttpContext.Request.Headers.Cookie = $"{cookieName}=overdue:0|d20260310:1";
+
+        await model.OnGetAsync(null, null, null, "agenda", null);
+
+        Assert.Equal(cookieName, model.AgendaStateCookieName);
+        Assert.Equal("/chores", model.AgendaStateCookiePath);
+        Assert.False(model.IsAgendaBlockOpen(AgendaViewState.OverdueKey, true));
+        Assert.True(model.IsAgendaBlockOpen("d20260310", false));
+        Assert.True(model.IsAgendaBlockOpen("d20260311", true));
+    }
+
+    [Fact]
+    public async Task OnGetAsync_IgnoresAgendaBlockStateSavedForAnotherUser()
+    {
+        await using var db = CreateDbContext();
+        var model = CreateAuthenticatedModel(db, "/chores", "alice");
+        model.HttpContext.Request.Headers.Cookie = $"{AgendaViewState.CookieName("bob")}=overdue:0";
+
+        await model.OnGetAsync(null, null, null, "agenda", null);
+
+        Assert.True(model.IsAgendaBlockOpen(AgendaViewState.OverdueKey, true));
+    }
+
     private static Chores.Pages.IndexModel CreateModel(AppDbContext db, string pathBase)
     {
-        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db), new AgendaService())
         {
             PageContext = new PageContext
             {
@@ -325,7 +434,7 @@ public class DashboardPathTests
 
     private static Chores.Pages.IndexModel CreateAuthenticatedModel(AppDbContext db, string pathBase, string loginName)
     {
-        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        return new Chores.Pages.IndexModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db), new AgendaService())
         {
             PageContext = new PageContext
             {
