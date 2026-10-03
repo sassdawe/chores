@@ -239,8 +239,8 @@ else if (Model.ActiveViewMode == DashboardViewMode.Agenda && Model.Agenda is not
                 <details class="agenda-day-details" data-agenda-key="@dayKey" open="@Model.IsAgendaBlockOpen(dayKey, isToday || day.Entries.Any())">
                     <summary class="agenda-summary">
                         <span class="agenda-date">
-                            <span class="agenda-date-weekday">@(isToday ? T["agenda.today"] : day.DateUtc.ToString("ddd"))</span>
-                            <span class="text-muted small">@day.DateUtc.ToString("d MMM yyyy")</span>
+                            <span class="agenda-date-weekday">@(isToday ? T["agenda.today"] : day.DateUtc.ToString("ddd", System.Globalization.CultureInfo.GetCultureInfo(T.CurrentLocale)))</span>
+                            <span class="text-muted small">@day.DateUtc.ToString("d MMM yyyy", System.Globalization.CultureInfo.GetCultureInfo(T.CurrentLocale))</span>
                         </span>
                         @if (day.Entries.Any())
                         {
