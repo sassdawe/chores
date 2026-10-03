@@ -52,7 +52,7 @@ public class AgendaService
 
     /// <summary>Earliest completion date the range can display; shared with the database query so both agree.</summary>
     public static DateTime PastStartUtc(AgendaRange range, DateTime todayUtc) =>
-        range == AgendaRange.PastTwoWeeks ? todayUtc.AddDays(-PastWindowDays) : todayUtc;
+        range == AgendaRange.PastTwoWeeks ? todayUtc.AddDays(1 - PastWindowDays) : todayUtc;
 
     /// <param name="chores">Chores already filtered by space and label.</param>
     /// <param name="records">Completion records for those chores, already limited to the requested window.</param>
