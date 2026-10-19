@@ -1,4 +1,4 @@
-using Chores.Models;
+﻿using Chores.Models;
 
 namespace Chores.Services;
 
@@ -12,6 +12,31 @@ public record ScheduleAdherence(AdherenceStatus Status, int DaysOverdue, int? Da
 /// </summary>
 public class ScheduleAdherenceService
 {
+    /// <summary>
+    /// Layout of the per-chore timeline bar: percentages of the bar covered by the on-track (green),
+    /// due-soon (yellow) and overdue (red) zones, and where today sits on it.
+    /// </summary>
+    public record TimelineLayout(double GreenPercent, double YellowPercent, double RedPercent, double MarkerPercent);
+
+    /// <returns>The timeline layout, or null for ad-hoc chores or chores never completed.</returns>
+    public static TimelineLayout? GetTimeline(Schedule schedule, DateTime? lastCompletedUtc, DateTime? nowUtc = null)
+    {
+        if (schedule == Schedule.AdHoc || lastCompletedUtc is null)
+            return null;
+
+        var interval = IntervalDays(schedule);
+        var lead = Math.Min(NotificationLeadDays(schedule), interval - 1);
+        var overrun = Math.Max(1, lead);
+        var total = (double)(interval + overrun);
+        var elapsed = ((nowUtc ?? DateTime.UtcNow).Date - lastCompletedUtc.Value.Date).Days;
+
+        return new TimelineLayout(
+            (interval - lead) / total * 100,
+            lead / total * 100,
+            overrun / total * 100,
+            Math.Clamp(elapsed / total * 100, 0, 100));
+    }
+
     /// <param name="schedule">The chore's configured repetition schedule.</param>
     /// <param name="lastCompletedUtc">UTC timestamp of the most recent completion, or null if never done.</param>
     /// <param name="nowUtc">Current UTC time (injected for testability).</param>
