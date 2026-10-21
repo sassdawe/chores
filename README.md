@@ -39,7 +39,10 @@ The app is designed to be a **tracker**, so it make it super easy to record when
 - Move chores between spaces while keeping their completion history and then choose destination-space labels
 - Space owners can invite members by login name, and invited users can accept invites from their profile without leaving their existing spaces
 - Passwordless authentication with FIDO2/passkeys
-- Installable Progressive Web App (PWA) with an offline fallback
+- Installable Progressive Web App (PWA) that keeps working offline:
+  - The dashboard and chore screens stay available from the device cache when the network drops
+  - Completions, "done yesterday" and skips recorded offline are stored on the device and marked "pending sync"
+  - Pending completions are replayed automatically once the device is back online (via Background Sync where supported), and replaying the same completion twice can never create a duplicate record
 - SQLite persistence (single-container friendly)
 
 ## Tech Stack

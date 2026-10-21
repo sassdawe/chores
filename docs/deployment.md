@@ -40,6 +40,7 @@ Set environment variables in `docker-compose.yml` or via `-e` flags:
 | `InstanceOperator__Url` | *(empty)* | Optional URL linked from the operator name in the footer. |
 | `InstanceOperator__Notice` | *(empty)* | Optional plain-text footer notice. Shown without a link. |
 | `Localization__EnabledLanguages` | `en` | Comma-separated language codes shown in the Profile language selector (e.g. `en,hu`). See [Language / UI Localisation](#language--ui-localisation). |
+| `Offline__MaxPrecachedPages` | `60` | How many pages the PWA may fetch per page load to keep them readable offline. See [Offline warm-up budget](#offline-warm-up-budget). |
 
 Example `docker-compose.yml` override for a Raspberry Pi on your local network:
 
@@ -176,6 +177,7 @@ If you configure a custom domain, update `Fido2__ServerDomain` and `Fido2__Origi
 | `InstanceOperator__Notice` | — | Optional plain-text footer notice. Shown in the app footer without a link. |
 | `DataDirectory` | — | Path inside the container where `chores.db` is stored. Defaults to `/data`. |
 | `Localization__EnabledLanguages` | — | Comma-separated language codes to show in the Profile language selector (e.g. `en,hu`). Defaults to `en`. See [Language / UI Localisation](#language--ui-localisation). |
+| `Offline__MaxPrecachedPages` | — | How many pages the PWA may fetch per page load to keep them readable offline. Defaults to `60`. See [Offline warm-up budget](#offline-warm-up-budget). |
 
 ### 6. Deploy updates
 
@@ -269,6 +271,52 @@ Keys not present in the custom file fall back to the English built-in values, so
 After adding or modifying files in the `languages/` directory, restart the container so the singleton `TranslationStore` reloads the files.
 
 Then add the new code to `Localization:EnabledLanguages` and restart.
+
+---
+
+## Offline warm-up budget
+
+Chores is installable as a PWA and keeps working without a connection. To make a page readable
+offline it has to have been fetched at least once, so on every page load the app quietly fetches
+the pages reachable from the current one — the dashboard, the navigation targets, and each chore's
+Complete, History and Edit pages — and stores them in the browser cache.
+
+`Offline__MaxPrecachedPages` caps how many pages that warm-up may fetch **per page load**. It is a
+throttle, not a coverage limit: pages already warmed are skipped, so each visit resumes where the
+previous one ran out and a chore list larger than the budget still fills in completely over a few
+page loads. Cached pages are re-warmed once a day; any page you actually open is refreshed
+immediately, because navigations always try the network first.
+
+| Value | Effect |
+|---|---|
+| `60` *(default)* | Caps the warm-up at 60 extra requests per page load. Sensible for a Raspberry Pi or other small host. |
+| Higher (e.g. `260`) | Warms a large space in a single visit. Appropriate for a cloud host that is not request-constrained. |
+| `0` | Disables the warm-up. Pages are still cached as you visit them, but only those you actually opened while online are available offline. |
+
+A space with *N* chores needs roughly `3N + 6` pages to be fully covered — one Complete, one
+History and one Edit page each, plus the dashboard and management pages. A 80-chore space is
+therefore fully warmed at about `260`, or after four or five page loads at the default of `60`.
+
+Within a single load the budget is spent in priority order, so a space that outgrows it caches the
+most useful pages first:
+
+1. The current page, the dashboard, and the page you came from.
+2. Every chore's **Complete** page — marking a chore done is the one action that still works offline.
+3. The management pages (Manage Chores, Spaces, Labels, Profile), which are read-only offline.
+4. Each chore's **History** and **Edit** pages.
+
+Anything that does not fit is simply not warmed: it still loads normally online, and offline it
+shows the offline notice instead of failing silently.
+
+```sh
+az webapp config appsettings set \
+  --name <app-name> \
+  --resource-group <resource-group> \
+  --settings Offline__MaxPrecachedPages=260
+```
+
+The setting is read on each page render, so a restart is enough to apply it — no cache version bump
+or client reinstall is needed.
 
 ---
 
