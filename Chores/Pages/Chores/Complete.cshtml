@@ -5,7 +5,11 @@
     ViewData["Title"] = T["complete.title"];
 }
 
-<div style="max-width:480px; margin:40px auto; text-align:center;">
+<div style="max-width:480px; margin:40px auto; text-align:center;"
+     data-offline-complete
+     data-chore-id="@Model.Chore.Id"
+     data-chore-name="@Model.Chore.Name"
+     data-return-path="@Model.BuildDashboardPath()">
     <h2 class="mb-3">@Model.Chore.Name</h2>
     @if (Model.LastCompletionAdherence is not null)
     {
@@ -30,7 +34,7 @@
 
     <p class="text-muted mb-4">@T["complete.whenDone"]</p>
 
-    <form method="post" asp-page-handler="Yesterday" asp-route-id="@Model.Chore.Id">
+    <form method="post" asp-page-handler="Yesterday" asp-route-id="@Model.Chore.Id" data-offline-mode="yesterday">
         <partial name="_DashboardReturnState" model="Model" />
         <div class="mb-3">
             <button type="submit" class="btn btn-outline-success btn-lg w-100">
@@ -39,7 +43,7 @@
         </div>
     </form>
 
-    <form method="post" asp-page-handler="" asp-route-id="@Model.Chore.Id">
+    <form method="post" asp-page-handler="" asp-route-id="@Model.Chore.Id" data-offline-mode="custom">
         <partial name="_DashboardReturnState" model="Model" />
         <div class="mb-4">
             <input type="datetime-local"
@@ -54,7 +58,7 @@
 
     <hr class="my-4" />
 
-    <form method="post" asp-page-handler="Skip" asp-route-id="@Model.Chore.Id" id="skipForm">
+    <form method="post" asp-page-handler="Skip" asp-route-id="@Model.Chore.Id" id="skipForm" data-offline-mode="skip">
         <partial name="_DashboardReturnState" model="Model" />
         <p class="text-muted small mb-2">@T["complete.skipNote"]</p>
         <button type="submit" class="btn btn-outline-warning btn-lg w-100">

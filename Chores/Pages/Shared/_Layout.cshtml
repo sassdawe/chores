@@ -10,6 +10,17 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Chores" />
     <title>@ViewData["Title"] - Chores</title>
+    <meta name="chores-base-path" content="@(Context.Request.PathBase.HasValue ? Context.Request.PathBase.Value : "/")" />
+    @{
+        // How many pages the offline warm-up may fetch per page load. A Pi serves far fewer of
+        // those comfortably than a cloud host; 0 turns the warm-up off entirely.
+        var precacheSetting = Context.RequestServices.GetRequiredService<IConfiguration>()["Offline:MaxPrecachedPages"];
+        var hasPrecacheLimit = int.TryParse(precacheSetting, out var precacheLimit) && precacheLimit >= 0;
+    }
+    @if (hasPrecacheLimit)
+    {
+        <meta name="chores-max-precached-pages" content="@precacheLimit" />
+    }
     <script type="importmap"></script>
     <link rel="manifest" href="~/manifest.json" />
     <link rel="apple-touch-icon" href="~/icons/icon-192.png" />
@@ -71,6 +82,15 @@
 
         var dashboardHref = $"{request.PathBase}/{dashboardQuery.ToQueryString().Value}";
         var manageChoresHref = $"{request.PathBase}/Chores{manageChoresQuery.ToQueryString().Value}";
+
+        // Everything these pages do needs a live server, so offline they are shown read-only.
+        // Completing and reviewing a chore both work from cache, so they stay fully usable.
+        var currentPage = ViewContext.RouteData.Values["page"] as string ?? string.Empty;
+        var isReadOnlyOffline = isAuthenticated
+            && new[] { "/Chores/", "/Labels", "/Members", "/Profile" }
+                .Any(prefix => currentPage.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            && !new[] { "/Chores/Complete", "/Chores/History" }
+                .Any(page => currentPage.Equals(page, StringComparison.OrdinalIgnoreCase));
     }
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm bg-body-tertiary mb-3 navbar-shadow">
@@ -114,7 +134,20 @@
         </nav>
     </header>
     <div class="container">
-        <main role="main" class="pb-3">
+        <main role="main" class="pb-3" data-offline-readonly="@(isReadOnlyOffline ? "true" : null)">
+            @if (isAuthenticated)
+            {
+                <div id="choresOfflineStatus"
+                     class="chores-offline-status d-none"
+                     role="status"
+                     aria-live="polite"
+                     data-message-offline="@T["offline.banner"]"
+                     data-message-pending="@T["offline.pending"]"
+                     data-message-syncing="@T["offline.syncing"]"
+                     data-message-synced="@T["offline.synced"]"
+                     data-message-pending-badge="@T["offline.pendingBadge"]"
+                     data-message-read-only="@T["offline.readOnly"]"></div>
+            }
             @RenderBody()
         </main>
     </div>
@@ -161,6 +194,11 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/offline-queue.js" asp-append-version="true"></script>
+    @if (isAuthenticated)
+    {
+        <script src="~/js/offline-sync.js" asp-append-version="true"></script>
+    }
     <script src="~/js/service-worker-register.js" asp-append-version="true"></script>
 
     <script>

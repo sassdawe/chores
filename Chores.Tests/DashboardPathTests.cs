@@ -79,19 +79,17 @@ public class DashboardPathTests
     public void CompleteBuildDashboardPath_PreservesActiveFilters()
     {
         using var db = CreateDbContext();
-        var model = new CompleteModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        var model = CreateCompleteModel(db);
+        model.LabelId = 7;
+        model.Sort = "due";
+        model.HouseholdIds = [2, 3];
+        model.PageContext = new PageContext
         {
-            LabelId = 7,
-            Sort = "due",
-            HouseholdIds = [2, 3],
-            PageContext = new PageContext
+            HttpContext = new DefaultHttpContext
             {
-                HttpContext = new DefaultHttpContext
+                Request =
                 {
-                    Request =
-                    {
-                        PathBase = new PathString("/chores")
-                    }
+                    PathBase = new PathString("/chores")
                 }
             }
         };
@@ -105,14 +103,12 @@ public class DashboardPathTests
     public void CompleteBuildDashboardPath_PreservesAgendaViewAndRange()
     {
         using var db = CreateDbContext();
-        var model = new CompleteModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        var model = CreateCompleteModel(db);
+        model.View = "agenda";
+        model.Range = "8w";
+        model.PageContext = new PageContext
         {
-            View = "agenda",
-            Range = "8w",
-            PageContext = new PageContext
-            {
-                HttpContext = new DefaultHttpContext()
-            }
+            HttpContext = new DefaultHttpContext()
         };
 
         var path = model.BuildDashboardPath();
@@ -491,6 +487,12 @@ public class DashboardPathTests
                 }
             }
         };
+    }
+
+    private static CompleteModel CreateCompleteModel(AppDbContext db)
+    {
+        var householdMemberships = new HouseholdMembershipService(db);
+        return new CompleteModel(db, new ScheduleAdherenceService(), householdMemberships, new ChoreCompletionService(db, householdMemberships));
     }
 
     private static AppDbContext CreateDbContext()
