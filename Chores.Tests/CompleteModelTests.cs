@@ -84,7 +84,7 @@ public class CompleteModelTests
 
         var markup = File.ReadAllText(pagePath);
 
-        Assert.Contains("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model.Chore.Id\">", markup);
+        Assert.Contains("<form method=\"post\" asp-page-handler=\"Yesterday\" asp-route-id=\"@Model.Chore.Id\" data-offline-mode=\"yesterday\">", markup);
         Assert.Contains("complete.doneYesterday", markup);
     }
 
@@ -169,7 +169,8 @@ public class CompleteModelTests
 
     private static CompleteModel CreateAuthenticatedModel(AppDbContext db, string loginName)
     {
-        return new CompleteModel(db, new ScheduleAdherenceService(), new HouseholdMembershipService(db))
+        var householdMemberships = new HouseholdMembershipService(db);
+        return new CompleteModel(db, new ScheduleAdherenceService(), householdMemberships, new ChoreCompletionService(db, householdMemberships))
         {
             PageContext = new PageContext
             {

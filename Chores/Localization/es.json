@@ -146,6 +146,13 @@
   "complete.skipConfirm": "¿Omitir esta tarea?",
   "complete.firstCompletion": "Primera realización",
 
+  "offline.banner": "Estás sin conexión. Las realizaciones se guardan en este dispositivo.",
+  "offline.pending": "{0} pendiente(s) de sincronizar.",
+  "offline.syncing": "Sincronizando…",
+  "offline.synced": "Se sincronizaron {0} realización(es).",
+  "offline.pendingBadge": "Pendiente de sincronizar",
+  "offline.readOnly": "Estás sin conexión. Gestionar tareas, espacios y etiquetas requiere conexión, así que esta página es de solo lectura.",
+
   "history.backToChores": "← Volver a las tareas",
   "history.schedule": "Programación:",
   "history.noCompletions": "Aún no se han registrado realizaciones.",

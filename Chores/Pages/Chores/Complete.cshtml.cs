@@ -16,15 +16,18 @@ public class CompleteModel : PageModel
     private readonly AppDbContext _db;
     private readonly ScheduleAdherenceService _adherence;
     private readonly HouseholdMembershipService _householdMemberships;
+    private readonly ChoreCompletionService _completions;
 
     public CompleteModel(
         AppDbContext db,
         ScheduleAdherenceService adherence,
-        HouseholdMembershipService householdMemberships)
+        HouseholdMembershipService householdMemberships,
+        ChoreCompletionService completions)
     {
         _db = db;
         _adherence = adherence;
         _householdMemberships = householdMemberships;
+        _completions = completions;
     }
 
     public Chore Chore { get; set; } = null!;
@@ -113,27 +116,9 @@ public class CompleteModel : PageModel
 
     private async Task<IActionResult> SaveCompletionAsync(int id, DateTime completedAtUtc, bool isSkipped = false)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.LoginName == User.Identity!.Name);
-        if (user is null) return NotFound();
+        var outcome = await _completions.RecordAsync(User.Identity!.Name, id, completedAtUtc, isSkipped);
+        if (outcome == ChoreCompletionOutcome.NotFound) return NotFound();
 
-        var chore = await _db.Chores.FirstOrDefaultAsync(c => c.Id == id);
-        if (chore is null) return NotFound();
-        if (!await _householdMemberships.CanAccessHouseholdAsync(user.LoginName, chore.HouseholdId)) return NotFound();
-
-        if (completedAtUtc > DateTime.UtcNow)
-        {
-            completedAtUtc = DateTime.UtcNow;
-        }
-
-        _db.CompletionRecords.Add(new CompletionRecord
-        {
-            ChoreId = chore.Id,
-            CompletedByUserId = user.Id,
-            CompletedAtUtc = completedAtUtc,
-            IsSkipped = isSkipped
-        });
-
-        await _db.SaveChangesAsync();
         return LocalRedirect(BuildDashboardPath());
     }
 

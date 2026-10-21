@@ -146,6 +146,13 @@
   "complete.skipConfirm": "Ki szeretnéd hagyni ezt a feladatot?",
   "complete.firstCompletion": "Első elvégzés",
 
+  "offline.banner": "Nincs internetkapcsolat. Az elvégzéseket az eszköz tárolja.",
+  "offline.pending": "{0} szinkronizálásra vár.",
+  "offline.syncing": "Szinkronizálás…",
+  "offline.synced": "{0} elvégzés szinkronizálva.",
+  "offline.pendingBadge": "Szinkronizálásra vár",
+  "offline.readOnly": "Nincs internetkapcsolat. A feladatok, terek és címkék kezeléséhez kapcsolat szükséges, ezért ez az oldal csak olvasható.",
+
   "history.backToChores": "← Vissza a feladatokhoz",
   "history.schedule": "Ütemezés:",
   "history.noCompletions": "Még nincs rögzített elvégzés.",

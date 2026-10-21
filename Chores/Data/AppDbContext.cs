@@ -62,6 +62,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasForeignKey(r => r.ChoreId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<CompletionRecord>()
+            .Property(r => r.ClientRecordId)
+            .HasMaxLength(32);
+
+        modelBuilder.Entity<CompletionRecord>()
+            .HasIndex(r => r.ClientRecordId)
+            .HasDatabaseName("IX_CompletionRecords_ClientRecordId")
+            .HasFilter($"{nameof(CompletionRecord.ClientRecordId)} IS NOT NULL")
+            .IsUnique();
+
         modelBuilder.Entity<Chore>()
             .HasMany(c => c.Labels)
             .WithMany(l => l.Chores)

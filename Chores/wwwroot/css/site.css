@@ -29,6 +29,14 @@ body {
   text-decoration: none;
 }
 
+.chores-offline-status {
+  font-size: 0.9rem;
+}
+
+.chores-offline-status.d-none {
+  display: none;
+}
+
 .filter-chip:hover {
   background: var(--bs-tertiary-bg);
   color: var(--bs-body-color);

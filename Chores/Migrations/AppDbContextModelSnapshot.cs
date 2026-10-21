@@ -85,6 +85,10 @@ namespace Chores.Migrations
                     b.Property<int>("ChoreId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ClientRecordId")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CompletedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -97,6 +101,11 @@ namespace Chores.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChoreId");
+
+                    b.HasIndex("ClientRecordId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_CompletionRecords_ClientRecordId")
+                        .HasFilter("ClientRecordId IS NOT NULL");
 
                     b.HasIndex("CompletedByUserId");
 

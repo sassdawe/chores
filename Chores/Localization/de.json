@@ -146,6 +146,13 @@
   "complete.skipConfirm": "Diese Aufgabe überspringen?",
   "complete.firstCompletion": "Erste Erledigung",
 
+  "offline.banner": "Du bist offline. Erledigungen werden auf diesem Gerät gespeichert.",
+  "offline.pending": "{0} warten auf die Synchronisierung.",
+  "offline.syncing": "Wird synchronisiert…",
+  "offline.synced": "{0} Erledigung(en) synchronisiert.",
+  "offline.pendingBadge": "Noch nicht synchronisiert",
+  "offline.readOnly": "Du bist offline. Aufgaben, Bereiche und Labels zu verwalten erfordert eine Verbindung, daher ist diese Seite schreibgeschützt.",
+
   "history.backToChores": "← Zurück zu den Aufgaben",
   "history.schedule": "Zeitplan:",
   "history.noCompletions": "Noch keine Erledigungen erfasst.",
