@@ -6,6 +6,7 @@ using Chores.Models;
 using Chores.Services;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,7 @@ builder.Services.AddScoped<AgendaService>();
 builder.Services.AddScoped<HouseholdInvitationService>();
 builder.Services.AddScoped<HouseholdMembershipService>();
 builder.Services.AddScoped<ChoreMoveService>();
+builder.Services.AddScoped<ChoreCompletionService>();
 
 // Localization: singleton store + scoped per-request service
 builder.Services.AddSingleton<TranslationStore>();
@@ -385,9 +387,94 @@ app.MapPost("/api/profile/passkey/result", async (HttpContext httpContext) =>
     return Results.Ok(new { status = "ok" });
 });
 
+// --- Offline (PWA) completion sync endpoints ---
+
+// The PWA needs a freshly minted antiforgery token before replaying its queue, because the page
+// that produced the queued completions may have been closed hours earlier.
+app.MapGet("/api/antiforgery/token", (HttpContext httpContext, IAntiforgery antiforgery) =>
+{
+    if (httpContext.User.Identity?.IsAuthenticated != true)
+        return Results.Unauthorized();
+
+    var tokens = antiforgery.GetAndStoreTokens(httpContext);
+    httpContext.Response.Headers.CacheControl = "no-store";
+
+    return Results.Ok(new { token = tokens.RequestToken, headerName = tokens.HeaderName });
+});
+
+app.MapPost("/api/completions", async (HttpContext httpContext, OfflineCompletionBatch batch) =>
+{
+    if (httpContext.User.Identity?.IsAuthenticated != true)
+        return Results.Unauthorized();
+
+    var antiforgery = httpContext.RequestServices.GetRequiredService<IAntiforgery>();
+    try
+    {
+        await antiforgery.ValidateRequestAsync(httpContext);
+    }
+    catch (AntiforgeryValidationException)
+    {
+        return Results.BadRequest(new { error = "antiforgery" });
+    }
+
+    var completions = batch?.Completions;
+    if (completions is null || completions.Count == 0)
+        return Results.BadRequest(new { error = "empty" });
+
+    if (completions.Count > ChoreCompletionService.MaxBatchSize)
+        return Results.BadRequest(new { error = "too-many" });
+
+    var service = httpContext.RequestServices.GetRequiredService<ChoreCompletionService>();
+    var loginName = httpContext.User.Identity!.Name;
+    var results = new List<OfflineCompletionResult>(completions.Count);
+    var seenClientRecordIds = new HashSet<string>(StringComparer.Ordinal);
+
+    foreach (var completion in completions)
+    {
+        // A malformed id can never be reconciled, so report it as rejected and let the client drop it.
+        if (!Guid.TryParse(completion.ClientRecordId, out var clientRecordId))
+        {
+            results.Add(new OfflineCompletionResult(completion.ClientRecordId ?? string.Empty, "rejected"));
+            continue;
+        }
+
+        var normalizedId = clientRecordId.ToString("N");
+
+        // A batch that repeats an id would otherwise trip the unique index on its second insert.
+        if (!seenClientRecordIds.Add(normalizedId))
+        {
+            results.Add(new OfflineCompletionResult(completion.ClientRecordId!, "duplicate"));
+            continue;
+        }
+
+        var outcome = await service.RecordAsync(
+            loginName,
+            completion.ChoreId,
+            completion.CompletedAtUtc,
+            completion.IsSkipped,
+            normalizedId,
+            httpContext.RequestAborted);
+
+        results.Add(new OfflineCompletionResult(completion.ClientRecordId!, outcome switch
+        {
+            ChoreCompletionOutcome.Recorded => "recorded",
+            ChoreCompletionOutcome.Duplicate => "duplicate",
+            _ => "rejected"
+        }));
+    }
+
+    return Results.Ok(new { results });
+});
+
 app.MapRazorPages()
    .WithStaticAssets();
 
 app.Run();
 
 record UsernameRequest(string Username);
+
+record OfflineCompletion(string? ClientRecordId, int ChoreId, DateTime CompletedAtUtc, bool IsSkipped);
+
+record OfflineCompletionBatch(List<OfflineCompletion>? Completions);
+
+record OfflineCompletionResult(string ClientRecordId, string Status);
